@@ -2,6 +2,17 @@
  HC-SR04 Ultrasonic Range Finder.
  Two motors attached to the motor shield.
  speaker/piezo for sound
+ 
+ Arduino Uno has three timers; timer 0, timer 1, timer 2,
+ Timer 0 is used by the arduino for millis().
+ The motorsheild uses timer 2, for pwm on pins 3 & 11.
+ Since the standard arduino tone function uses timer 2 also, 
+ we have to use a different library "NewTone" this uses timer 1 instead
+ which means no pwm on pins 10 & 9. it also means it is incompatable with the 
+ standard servo library.
+ So we have pwm left on pins 5 & 6 to put some leds on.
+ 
+ 
  */
 
 #include <util/delay.h>
@@ -35,6 +46,9 @@ unsigned long melody_last = 0; // When the last melody played.
 int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
 
+// Led configuration
+const byte led_battery = 5;
+
 unsigned long millis_now;
 
 void setup() {
@@ -54,6 +68,8 @@ void setup() {
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
   
+  batteryLevel();
+  
   // Turn in place constantly.
   digitalWrite(motorA_direction, HIGH); // Channel A forward
   digitalWrite(motorB_direction, LOW); // Channel B backward
@@ -72,9 +88,9 @@ void loop() {
     sonar_last = millis_now;
   
     unsigned int cm = sonar.ping_cm(); // Send a ping, get ping time in microseconds (uS).
-    Serial.print("Ping: ");
-    Serial.print(cm);
-    Serial.println("cm");
+    //Serial.print("Ping: ");
+    //Serial.print(cm);
+    //Serial.println("cm");
   }
   
   // Check to see if it's time for another melody.
@@ -83,15 +99,13 @@ void loop() {
     melody_last = millis_now;
     playMelody();
     
-    // Check battery level
-    long vcc = readVcc();
-    Serial.print("Battery: ");
-    Serial.println(vcc);
+    batteryLevel();
   }
   
 }
 
-void playMelody() {
+void playMelody() 
+{
   // iterate over the notes of the melody:
   for (int thisNote = 0; thisNote < 8; thisNote++) {
 
@@ -108,6 +122,18 @@ void playMelody() {
     // stop the tone playing:
     noNewTone(tone_pin);
   }
+}
+
+void batteryLevel()
+{
+  // Check battery level
+  long vcc = readVcc();
+  byte batt = map(vcc, 2500, 5500, 0, 255);
+  analogWrite(led_battery, batt);
+  Serial.print("Battery: ");
+  Serial.print(vcc);
+  Serial.print(" : ");
+  Serial.println(batt);
 }
 
 /**
