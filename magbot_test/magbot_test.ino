@@ -1,10 +1,11 @@
 /**
- HC-SR04 Ultrasonic Range Finder attached to the servo.
+ HC-SR04 Ultrasonic Range Finder.
  Two motors attached to the motor shield.
+ speaker/piezo for sound
  */
 
 #include <NewPing.h> // From https://code.google.com/p/arduino-new-ping/
-#include <Servo.h>
+#include <NewTone.h> // From https://code.google.com/p/arduino-new-tone/
 
 // Motor attached to channel A:
 const byte motorA_direction = 12;
@@ -25,21 +26,21 @@ const byte sonar_delay = 50; // Number of milliseconds to wait before next ping
 unsigned long sonar_last = 0; // When the last ping happened.
 NewPing sonar(sonar_trigger, sonar_echo, sonar_distance); // NewPing setup of pins and maximum distance.
 
-// Servo configuration
-const byte servo_pin = 6;
-byte servo_sweep_direction = 0; // The current direction the servo is sweeping; 0 or 1
-const byte servo_delay = 25; // Number of milliseconds to wait before next move
-unsigned long servo_last = 0; // When the last move happened.
-Servo servo;  // create servo object to control a servo
+// Tone configuration
+const byte tone_pin = 2;
+unsigned long melody_delay = 10000; // Number of milliseconds to wait before next melody
+unsigned long melody_last = 0; // When the last melody played.
+// Melody (liberated from the toneMelody Arduino example sketch by Tom Igoe).
+int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
+int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
 
 unsigned long millis_now;
 
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see ping results.
   
-  servo.attach(servo_pin);  // attaches the sonar servo to the servo object 
   
-    // Setup Channel A
+  // Setup Channel A
   pinMode(motorA_direction, OUTPUT); // Initiates motor pin for channel A
   pinMode(motorA_brake, OUTPUT); // Initiates break pin for channel A
 
@@ -52,12 +53,13 @@ void setup() {
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
   
-  // Turn in place 
+  // Turn in place constantly.
   digitalWrite(motorA_direction, HIGH); // Channel A forward
   digitalWrite(motorB_direction, LOW); // Channel B backward
-  
   analogWrite(motorA_pwm, 255); // Channel A at max speed 
   analogWrite(motorB_pwm, 255); // Channel B at max speed
+  
+  playMelody();
 }
 
 void loop() {
@@ -74,28 +76,31 @@ void loop() {
     Serial.println("cm");
   }
   
-  // Check to see if it's time for another soanr servo move.
-  if (millis_now - servo_last > servo_delay) {
-    // Remember when this move was done, so we know when to do the next one.
-    servo_last = millis_now;
-    
-    // Sweep
-    // Get the last angle the servo was set to.
-    int servo_pos = servo.read();
-    if (servo_sweep_direction == 0) {
-      servo_pos++; // Add 1 degree to the servo's position.
-    } else {
-      servo_pos--; // Remove 1 degree to the servo's position.
-    }
-    
-    // At the end of the sweep, change directions for the next move.
-    if (servo_pos == 170) {
-      servo_sweep_direction = 1;
-    } else if (servo_pos == 10) {
-      servo_sweep_direction = 0;
-    }
-    servo.write(servo_pos); 
+  // Check to see if it's time for another melody.
+  if (millis_now - melody_last > melody_delay) {
+    // Remeber when this ping was done, so we know when to do the next one.
+    melody_last = millis_now;
+    playMelody();
   }
   
+}
+
+void playMelody() {
+  // iterate over the notes of the melody:
+  for (int thisNote = 0; thisNote < 8; thisNote++) {
+
+    // to calculate the note duration, take one second 
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000/noteDurations[thisNote];
+    NewTone(tone_pin, melody[thisNote],noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noNewTone(tone_pin);
+  }
 }
 
