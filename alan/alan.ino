@@ -43,8 +43,7 @@ const byte ping_echo = 4;  // Arduino pin tied to echo pin on the ultrasonic sen
 const int ping_distance = 80; // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 const byte ping_delay = 200; // Number of milliseconds to wait before next ping
 NewPing sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins and maximum distance.
-
-
+int ping_timer = 0; // Stores the timer used for the ping sonar.
 
 // Battery configuration
 const byte battery_led = 5;
@@ -57,12 +56,39 @@ int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
 unsigned long melody_delay = 10000; // Number of milliseconds to wait before next melody
 
+// The motion states, so we alwasys no where we're going.
+enum motion_states {
+  M_STOP, 
+  M_FWD, 
+  M_REV,
+  M_ROTATE_LEFT,
+  M_ROTATE_RIGHT
+};
+// The curent motion state.
+motion_states motion_state = M_STOP;
+
+// The action states, so we alwasys no what action is currently happening.
+enum action_states {
+  A_STOPPED,
+  A_TRUNDLE, 
+  A_PINGSEARCH,
+  A_DANCE1,
+  A_DANCE2,
+  A_BORED,
+  A_HAPPY,
+  A_CALIBRATION
+};
+// The curent action state.
+action_states action_state = A_STOPPED;
+int timer_action = 0;
+byte action_done = 0; // mnmm needs explaining
 
 // There must be one global SimpleTimer object.
 // More SimpleTimer objects can be created and run,
 // although there is little point in doing so.
 SimpleTimer timer;
 
+// Creat the sound playing object.
 Sound snd(sound_pin);
 
 void setup() {
@@ -84,26 +110,20 @@ void setup() {
   
   batteryLevel();
   
-  // Turn in place constantly.
-  digitalWrite(motorA_direction, HIGH); // Channel A forward
-  digitalWrite(motorB_direction, LOW); // Channel B backward
-  analogWrite(motorA_pwm, 255); // Channel A at max speed 
-  analogWrite(motorB_pwm, 255); // Channel B at max speed
+  // Start moving!
+  timer_action = timer.setTimeout(100, action_trundle);
+  //action_trundle();
   
-  
-  
+  // Start singing
   playMelody();
-  //sound_playMelody();
   
-  int timer_ping = timer.setInterval(ping_delay, doPing);
-  Serial.print("Ping tick started id=");
-  Serial.println(timer_ping);
+
   
-  
+  /*
   int timer_melody = timer.setInterval(melody_delay, playMelody);
   Serial.print("Melody tick started id=");
   Serial.println(timer_melody);
-  
+  */
   
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
@@ -114,22 +134,8 @@ void loop()
 {
   // Let the timers do their thing.
   timer.run();
+  action_run();
   snd.update();
-}
-
-
-void doPing()
-{
-  unsigned int cm = sonar.ping_cm(); // Send a ping, get ping time in microseconds (uS).
-  if (cm > 0 && cm < 10) {
-    // too close! 
-    Serial.println("Too close!");
-  }
-  
-  Serial.print("Ping: ");
-  Serial.print(cm);
-  Serial.println("cm");
-  
 }
 
 void batteryLevel()
@@ -179,46 +185,255 @@ long readVcc()
   return result; // Vcc in millivolts
 }
 
+
 /********************************************************************************
-Sound functions
+Ping functions
 ********************************************************************************/
-/*
-void sound_nextNote()
+
+void ping_start()
 {
-  ++sound_current_note;
-  // @todo: remove hard coding to the 8 note melody
-  if (sound_current_note < 8) {
-    sound_playNote(sound_current_note);
+  if (ping_timer == 0) {
+    ping_timer = timer.setInterval(ping_delay, ping_measure);
   } else {
-    // reset the counter
-   sound_current_note = 0; 
+    timer.enable(ping_timer); 
+  }
+  Serial.println("Ping started"); 
+}
+
+void ping_stop()
+{
+  timer.disable(ping_timer);
+  Serial.println("Ping stopped"); 
+}
+
+void ping_measure()
+{
+  unsigned int cm = sonar.ping_cm(); // Send a ping, get ping distance in cm.
+  
+  if (action_state == A_PINGSEARCH) {
+    
+    // looking for a new way to go.
+    //int max_cm = 
+    
+  } else {
+    
+    // Watch for obstacles as we are not doing a ping search.
+    if (cm > 0 && cm < 10) {
+      // too close! 
+      Serial.println("Too close!");
+      
+      // No more pinging for now.
+      ping_stop();
+      
+      // Don't hit the obstacle.
+      motion_stop();
+      
+      // play sound
+      playMelody();
+    
+      // back up
+      motion_rev();
+      
+      // then after a second, search for a new direction.
+      timer.setTimeout(1000, action_pingSearch);
+    }
+    
+    Serial.print("Ping: ");
+    Serial.print(cm);
+    Serial.println("cm");
   }
 }
 
-void sound_stopNote()
+
+
+/********************************************************************************
+Action functions
+********************************************************************************/
+/**
+ * The "state machine" that handles action.
+ */
+void action_run()
 {
-  // stop the tone playing:
-  noNewTone(sound_pin);
-  sound_nextNote();
+  /*
+  Serial.print("action_run ");
+  Serial.print(action_state);
+  Serial.print(" - ");
+  Serial.println(motion_state);
+  */
+  
+  switch (action_state) {
+    case A_STOPPED:
+    
+      break;
+    
+    case A_TRUNDLE:
+    
+      break;
+      
+    case A_PINGSEARCH:
+      switch (motion_state) {
+        case M_STOP:
+        Serial.println("SEARCH LEFT");
+          // Start pinging
+          ping_start();
+  
+          action_timeoutStart(1000);
+          // Rotate left for 1 second
+          motion_rotateLeft();          
+          break;
+          
+        case M_ROTATE_LEFT:
+          if (action_done) {
+            Serial.println("SEARCH RIGHT");
+            action_timeoutStart(1500); //@todo not fake the search!
+            // Rotate left
+            motion_rotateRight(); 
+          }
+          break;
+          
+        case M_ROTATE_RIGHT:
+          if (action_done) {
+            Serial.println("SEARCH DONE");
+            // Done the sweep, stop.
+            action_stop(); 
+            
+            // Stop pinging
+            ping_stop(); 
+            
+            // Trundle away
+            action_trundle();
+          }
+          break;
+      }
+      break;
+      
+    case A_DANCE1:
+    
+      break;
+      
+    case A_DANCE2:
+    
+      break;
+      
+    case A_BORED:
+    
+      break;
+      
+    case A_HAPPY:
+    
+      break;
+      
+    case A_CALIBRATION:
+    
+      break;
+  }
 }
 
-void sound_playNote(int note)
+void action_stop()
 {
-  int noteDuration = 1000/noteDurations[note];
-  NewTone(sound_pin, melody[note], noteDuration);
-
-  // to distinguish the notes, set a minimum time between them.
-  // the note's duration + 30% seems to work well:
-  int pauseBetweenNotes = noteDuration * 1.30;
-  Serial.print(melody[note]); 
-  Serial.print(" : ");
-  Serial.println(pauseBetweenNotes);
-  timer.setTimeout(pauseBetweenNotes, sound_stopNote);
+  action_state = A_STOPPED;
+  motion_stop();
 }
 
-void sound_playMelody() 
+/**
+ * Moves forward avoiding obstacles.
+ */
+void action_trundle()
 {
-  sound_playNote(sound_current_note);
+  Serial.println("TRUNDLING...");
+  // Remeber that we're trundling along.
+  action_state = A_TRUNDLE;
+  
+  // Start pinging
+  ping_start();
+
+  motion_fwd();
 }
-*/
+
+/**
+ * Look for somewhare to go.
+ */
+void action_pingSearch()
+{
+  Serial.println("SEARCHING");
+
+  motion_stop();
+  // Set the state, so the action can complete.
+  action_state = A_PINGSEARCH;
+}
+
+void action_timeoutStart(int duration)
+{
+  action_done = 0; 
+  // Delete the previous timer, so we can use it's slot.
+  timer.deleteTimer(timer_action); 
+  // Start a new one.
+  timer_action = timer.setTimeout(duration, action_timeoutDone);
+}
+
+void action_timeoutDone()
+{
+  action_done = 1; 
+}
+
+/********************************************************************************
+Motion functions
+********************************************************************************/
+
+void motion_stop()
+{
+  if (motion_state != M_STOP) {
+    analogWrite(motorA_pwm, 0); // Channel A at max speed 
+    analogWrite(motorB_pwm, 0); // Channel B at max speed 
+    motion_state = M_STOP;
+  }
+}
+
+void motion_fwd()
+{
+//@todo: set speed
+  digitalWrite(motorA_direction, HIGH); // Channel A forward
+  digitalWrite(motorB_direction, HIGH); // Channel B forward
+  analogWrite(motorA_pwm, 255); // Channel A at max speed 
+  analogWrite(motorB_pwm, 255); // Channel B at max speed 
+  motion_state = M_FWD;
+}
+
+void motion_rev()
+{
+  if (motion_state != M_REV) {
+//@todo: set speed
+    digitalWrite(motorA_direction, LOW); // Channel A backward
+    digitalWrite(motorB_direction, LOW); // Channel B backward
+    analogWrite(motorA_pwm, 125); // Channel A at half speed 
+    analogWrite(motorB_pwm, 125); // Channel B at half speed   
+    motion_state = M_REV; 
+  }
+}
+
+void motion_rotateLeft()
+{
+  if (motion_state != M_ROTATE_LEFT) {
+    Serial.println("LEFT");
+//@todo: set speed
+    digitalWrite(motorA_direction, HIGH); // Channel A forward
+    digitalWrite(motorB_direction, LOW); // Channel B backward
+    analogWrite(motorA_pwm, 75);
+    analogWrite(motorB_pwm, 75);   
+    motion_state = M_ROTATE_LEFT; 
+  }
+}
+
+void motion_rotateRight()
+{
+  if (motion_state != M_ROTATE_RIGHT) {
+    Serial.println("RIGHT");
+//@todo: set speed
+    digitalWrite(motorA_direction, LOW); // Channel A backward
+    digitalWrite(motorB_direction, HIGH); // Channel B forward
+    analogWrite(motorA_pwm, 75);
+    analogWrite(motorB_pwm, 75);   
+    motion_state = M_ROTATE_RIGHT; 
+  }
+}
 
