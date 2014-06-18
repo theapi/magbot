@@ -17,14 +17,11 @@
 
 #include <util/delay.h>
 #include <NewPing.h> // From https://code.google.com/p/arduino-new-ping/
+#include <NewTone.h> // From https://code.google.com/p/arduino-new-tone/
 
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.
-#include <Timer.h>   // From https://github.com/JChristensen/Timer/tree/v2.1
-
-
-#include <NewTone.h> // From https://code.google.com/p/arduino-new-tone/
-
+#include "SimpleTimer.h"
 
 // Motor attached to channel A:
 const byte motorA_direction = 12;
@@ -41,7 +38,7 @@ const byte motorB_sensor = A1;
 const byte ping_trigger = 7;  // Arduino pin tied to trigger pin on the ultrasonic sensor.
 const byte ping_echo = 4;  // Arduino pin tied to echo pin on the ultrasonic sensor.
 const int ping_distance = 80; // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
-const byte ping_delay = 50; // Number of milliseconds to wait before next ping
+const byte ping_delay = 200; // Number of milliseconds to wait before next ping
 NewPing sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins and maximum distance.
 
 
@@ -50,15 +47,20 @@ NewPing sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins 
 const byte battery_led = 5;
 unsigned long battery_delay = 15000; // Number of milliseconds to wait before next battery reading
 
-// Tone configuration
-const byte tone_pin = 2;
+// Sound configuration
+const byte sound_pin = 2;
+int sound_current_note = 0;
 // Melody (liberated from the toneMelody Arduino example sketch by Tom Igoe).
 int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
 unsigned long melody_delay = 10000; // Number of milliseconds to wait before next melody
 
-// Timer setup
-Timer t;
+
+// There must be one global SimpleTimer object.
+// More SimpleTimer objects can be created and run,
+// although there is little point in doing so.
+SimpleTimer timer;
+
 
 
 void setup() {
@@ -78,7 +80,7 @@ void setup() {
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
   
-  batteryLevel((void*)0);
+  batteryLevel();
   
   // Turn in place constantly.
   digitalWrite(motorA_direction, HIGH); // Channel A forward
@@ -87,45 +89,44 @@ void setup() {
   analogWrite(motorB_pwm, 255); // Channel B at max speed
   
   
+  sound_playMelody();
   
-  sound_playMelody((void*)0);
-  
-  int pingEvent = t.every(ping_delay, doPing, (void*)0);
+  int timer_ping = timer.setInterval(ping_delay, doPing);
   Serial.print("Ping tick started id=");
-  Serial.println(pingEvent);
+  Serial.println(timer_ping);
   
-  int melodyEvent = t.every(melody_delay, sound_playMelody, (void*)0);
+  int timer_melody = timer.setInterval(melody_delay, sound_playMelody);
   Serial.print("Melody tick started id=");
-  Serial.println(melodyEvent);
+  Serial.println(timer_melody);
   
-  int batteryEvent = t.every(battery_delay, batteryLevel, (void*)0);
+  int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
-  Serial.println(batteryEvent);
+  Serial.println(timer_battery);
 }
 
 void loop() 
 {
   
   // Let the timer do it's thing
-  t.update();
+  timer.run();
 }
 
 
-void doPing(void *context)
+void doPing()
 {
   unsigned int cm = sonar.ping_cm(); // Send a ping, get ping time in microseconds (uS).
   if (cm > 0 && cm < 10) {
     // too close! 
     Serial.println("Too close!");
   }
-  
+  /*
   Serial.print("Ping: ");
   Serial.print(cm);
   Serial.println("cm");
-  
+  */
 }
 
-void batteryLevel(void *context)
+void batteryLevel()
 {
   // Check battery level
   long vcc = readVcc();
@@ -171,37 +172,41 @@ long readVcc()
 Sound functions
 ********************************************************************************/
 
-void sound_nextNote(void *context)
+void sound_nextNote()
 {
-  int note = (int)context;
-  if (note < 8) {
-    ++note;
-    sound_playNote((void*)note);
+  ++sound_current_note;
+  // @todo: remove hard coding to the 8 note melody
+  if (sound_current_note < 8) {
+    sound_playNote(sound_current_note);
+  } else {
+    // reset the counter
+   sound_current_note = 0; 
   }
 }
 
-void sound_stopNote(void *context)
+void sound_stopNote()
 {
   // stop the tone playing:
-  noNewTone(tone_pin);
-  sound_nextNote(context);
+  noNewTone(sound_pin);
+  sound_nextNote();
 }
 
-void sound_playNote(void *context)
+void sound_playNote(int note)
 {
-  int note = (int)context;
   int noteDuration = 1000/noteDurations[note];
-  NewTone(tone_pin, melody[note],noteDuration);
+  NewTone(sound_pin, melody[note], noteDuration);
 
   // to distinguish the notes, set a minimum time between them.
   // the note's duration + 30% seems to work well:
   int pauseBetweenNotes = noteDuration * 1.30;
+  Serial.print(melody[note]); 
+  Serial.print(" : ");
   Serial.println(pauseBetweenNotes);
-  int noteEvent = t.after(pauseBetweenNotes, sound_stopNote, (void*)note);
+  timer.setTimeout(pauseBetweenNotes, sound_stopNote);
 }
 
-void sound_playMelody(void *context) 
+void sound_playMelody() 
 {
-  sound_playNote((void*)0);
+  sound_playNote(sound_current_note);
 }
 
