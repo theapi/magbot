@@ -23,6 +23,9 @@
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
 
+
+#include "Sound.h"
+
 // Motor attached to channel A:
 const byte motorA_direction = 12;
 const byte motorA_pwm = 3;
@@ -49,7 +52,6 @@ unsigned long battery_delay = 15000; // Number of milliseconds to wait before ne
 
 // Sound configuration
 const byte sound_pin = 2;
-int sound_current_note = 0;
 // Melody (liberated from the toneMelody Arduino example sketch by Tom Igoe).
 int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
@@ -61,7 +63,7 @@ unsigned long melody_delay = 10000; // Number of milliseconds to wait before nex
 // although there is little point in doing so.
 SimpleTimer timer;
 
-
+Sound snd(sound_pin);
 
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see ping results.
@@ -89,15 +91,19 @@ void setup() {
   analogWrite(motorB_pwm, 255); // Channel B at max speed
   
   
-  sound_playMelody();
+  
+  playMelody();
+  //sound_playMelody();
   
   int timer_ping = timer.setInterval(ping_delay, doPing);
   Serial.print("Ping tick started id=");
   Serial.println(timer_ping);
   
-  int timer_melody = timer.setInterval(melody_delay, sound_playMelody);
+  
+  int timer_melody = timer.setInterval(melody_delay, playMelody);
   Serial.print("Melody tick started id=");
   Serial.println(timer_melody);
+  
   
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
@@ -106,9 +112,9 @@ void setup() {
 
 void loop() 
 {
-  
-  // Let the timer do it's thing
+  // Let the timers do their thing.
   timer.run();
+  snd.update();
 }
 
 
@@ -119,11 +125,11 @@ void doPing()
     // too close! 
     Serial.println("Too close!");
   }
-  /*
+  
   Serial.print("Ping: ");
   Serial.print(cm);
   Serial.println("cm");
-  */
+  
 }
 
 void batteryLevel()
@@ -136,6 +142,11 @@ void batteryLevel()
   Serial.print(vcc);
   Serial.print(" : ");
   Serial.println(batt);
+}
+
+void playMelody() 
+{
+  snd.playMelody(melody, noteDurations);
 }
 
 /**
@@ -171,7 +182,7 @@ long readVcc()
 /********************************************************************************
 Sound functions
 ********************************************************************************/
-
+/*
 void sound_nextNote()
 {
   ++sound_current_note;
@@ -209,4 +220,5 @@ void sound_playMelody()
 {
   sound_playNote(sound_current_note);
 }
+*/
 
