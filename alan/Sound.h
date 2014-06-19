@@ -23,6 +23,7 @@ class Sound
     int _current_note;
     int *_melody;
     int *_noteDurations;
+    int8_t _playing; // So we know if something is playing
 };
 
 

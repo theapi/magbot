@@ -55,6 +55,7 @@ void Sound::playNote(int note)
 {
   int dur = _noteDurations[note];
   int noteDuration = 1000/dur;
+  this->_playing = 1;
   NewTone(_pin, _melody[note], noteDuration);
 
   // to distinguish the notes, set a minimum time between them.
