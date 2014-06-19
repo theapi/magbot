@@ -237,7 +237,7 @@ void ping_measure()
   } else {
     
     // Watch for obstacles as we are not doing a ping search.
-    if (cm > 0 && cm < 10) {
+    if (cm > 0 && cm < 20) {
       // too close! 
       Serial.println("Too close!");
       
@@ -305,7 +305,7 @@ void action_run()
         case M_ROTATE_LEFT:
           if (action_done) {
             Serial.println("SEARCH RIGHT");
-            action_timeoutStart(1500); //@todo not fake the search!
+            action_timeoutStart(2000); //@todo not fake the search!
             // Rotate left
             motion_rotateRight(); 
           }
@@ -428,8 +428,8 @@ void motion_rev()
 //@todo: set speed
     digitalWrite(motorA_direction, LOW); // Channel A backward
     digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, 150); // Channel A at half speed 
-    analogWrite(motorB_pwm, 150); // Channel B at half speed   
+    analogWrite(motorA_pwm, 200); // Channel A at half speed 
+    analogWrite(motorB_pwm, 200); // Channel B at half speed   
     motion_state = M_REV; 
   
 }
@@ -441,8 +441,8 @@ void motion_rotateLeft()
 //@todo: set speed
     digitalWrite(motorA_direction, HIGH); // Channel A forward
     digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, 130);
-    analogWrite(motorB_pwm, 130);   
+    analogWrite(motorA_pwm, 200);
+    analogWrite(motorB_pwm, 200);   
     motion_state = M_ROTATE_LEFT; 
   
 }
@@ -454,8 +454,8 @@ void motion_rotateRight()
 //@todo: set speed
     digitalWrite(motorA_direction, LOW); // Channel A backward
     digitalWrite(motorB_direction, HIGH); // Channel B forward
-    analogWrite(motorA_pwm, 130);
-    analogWrite(motorB_pwm, 130);   
+    analogWrite(motorA_pwm, 200);
+    analogWrite(motorB_pwm, 200);   
     motion_state = M_ROTATE_RIGHT; 
   
 }
