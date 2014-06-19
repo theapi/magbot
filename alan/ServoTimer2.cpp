@@ -126,6 +126,23 @@ static void initISR()
       Channel = 0;  // clear the channel index  
       ISRCount = 0;  // clear the value of the ISR counter;
       
+      /*
+      Serial.print("TIMSK2 ");
+      Serial.println(TIMSK2);
+      
+      Serial.print("TCCR2A ");
+      Serial.println(TCCR2A);
+      
+      Serial.print("TCCR2B ");
+      Serial.println(TCCR2B);
+      
+      Serial.print("TCNT2 ");
+      Serial.println(TCNT2);
+      
+      Serial.print("TIFR2 ");
+      Serial.println(TIFR2);
+      */
+      
       /* setup for timer 2 */
       TIMSK2 = 0;  // disable interrupts 
       TCCR2A = 0;  // normal counting mode 
@@ -142,10 +159,17 @@ static void initISR()
  */
 static void endISR()
 {
-  TIMSK1 &= ~_BV(OCIE1A);   // Remove the timer interrupt.
-  TCCR1B  = _BV(CS11);      // Default clock prescaler of 8.
-  TCCR1A  = _BV(WGM10);     // Set to defaults so PWM can work like normal (PWM, phase corrected, 8bit).
-  
-  isStarted = false;
+ 
+  // Reset timer2 to the default values.
+  TIMSK2 = 0; // Remove the interupt
+  //TCCR2A = 1;
+  TCCR2A = _BV(WGM20); // Wave generation mode - PWM, Phase Correct
+  //TCCR2B = 4;
+  TCCR2B = _BV(CS22); // prescaler of 64
 
+  //TCNT2 = 63;
+  TCNT2 = 0; // clear the timer2 count 
+  TIFR2 = 0; // clear pending interrupts; 
+
+  isStarted = false; // Force the timer to be setup for each servo attach.
 }

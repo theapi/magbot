@@ -131,24 +131,21 @@ void setup() {
   digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
+  pinMode(6, OUTPUT); 
   
   batteryLevel();
   
   // Start moving!
-  timer_action = timer.setTimeout(100, action_trundle);
-  //action_trundle();
+  //timer_action = timer.setTimeout(100, action_trundle);
+  timer_action = timer.setTimeout(100, experimental_servoMove);
   
   // Start singing
-  playMelody();
+  //playMelody();
   
-  
+
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
-  
-  int timer_experimental = timer.setInterval(30000, experimental_servoMove);
-  Serial.print("Servo tick started id=");
-  Serial.println(timer_experimental);
   
 }
 
@@ -257,12 +254,13 @@ void ping_measure()
       motion_rev();
       
       // then after a second, search for a new direction.
-      timer.setTimeout(1000, action_pingSearch);
+      timer.setTimeout(1500, action_pingSearch);
     }
-    
+    /*
     Serial.print("Ping: ");
     Serial.print(cm);
     Serial.println("cm");
+    */
   }
 }
 
@@ -322,8 +320,10 @@ void action_run()
             // Stop pinging
             ping_stop(); 
             
+            
             // Trundle away
-            action_trundle();
+            //action_trundle();
+            experimental_servoMove();
           }
           break;
       }
@@ -355,6 +355,7 @@ void action_stop()
 {
   action_state = A_STOPPED;
   motion_stop();
+  ping_stop();
 }
 
 /**
@@ -404,11 +405,11 @@ Motion functions
 
 void motion_stop()
 {
-  if (motion_state != M_STOP) {
+  
     analogWrite(motorA_pwm, 0); // Channel A at max speed 
     analogWrite(motorB_pwm, 0); // Channel B at max speed 
     motion_state = M_STOP;
-  }
+  
 }
 
 void motion_fwd()
@@ -416,61 +417,64 @@ void motion_fwd()
 //@todo: set speed
   digitalWrite(motorA_direction, HIGH); // Channel A forward
   digitalWrite(motorB_direction, HIGH); // Channel B forward
-  analogWrite(motorA_pwm, 255); // Channel A at max speed 
-  analogWrite(motorB_pwm, 255); // Channel B at max speed 
+  analogWrite(motorA_pwm, 250); // Channel A at max speed 
+  analogWrite(motorB_pwm, 250); // Channel B at max speed 
   motion_state = M_FWD;
 }
 
 void motion_rev()
 {
-  if (motion_state != M_REV) {
+  
 //@todo: set speed
     digitalWrite(motorA_direction, LOW); // Channel A backward
     digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, 125); // Channel A at half speed 
-    analogWrite(motorB_pwm, 125); // Channel B at half speed   
+    analogWrite(motorA_pwm, 150); // Channel A at half speed 
+    analogWrite(motorB_pwm, 150); // Channel B at half speed   
     motion_state = M_REV; 
-  }
+  
 }
 
 void motion_rotateLeft()
 {
-  if (motion_state != M_ROTATE_LEFT) {
+  
     Serial.println("LEFT");
 //@todo: set speed
     digitalWrite(motorA_direction, HIGH); // Channel A forward
     digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, 75);
-    analogWrite(motorB_pwm, 75);   
+    analogWrite(motorA_pwm, 130);
+    analogWrite(motorB_pwm, 130);   
     motion_state = M_ROTATE_LEFT; 
-  }
+  
 }
 
 void motion_rotateRight()
 {
-  if (motion_state != M_ROTATE_RIGHT) {
+  
     Serial.println("RIGHT");
 //@todo: set speed
     digitalWrite(motorA_direction, LOW); // Channel A backward
     digitalWrite(motorB_direction, HIGH); // Channel B forward
-    analogWrite(motorA_pwm, 75);
-    analogWrite(motorB_pwm, 75);   
+    analogWrite(motorA_pwm, 130);
+    analogWrite(motorB_pwm, 130);   
     motion_state = M_ROTATE_RIGHT; 
-  }
+  
 }
 
 void experimental_servoMove() 
 {
+  Serial.println("experimental_servoMove");
   // Can't move servo & motor at the same time.
-  motion_stop();
-  
-  // Stop the motor pins being outputs.
-  pinMode(motorA_pwm, INPUT);
-  pinMode(motorB_pwm, INPUT); 
-  
-  servo.attach(19);
-  servo.write(1500);
-  delay(1000); // yeah it's experimental
+  action_stop();
+ 
+  servo.attach(6);
+  servo.write(random(1100, 1800));
+  timer.setTimeout(500, servo_detach);
+}
+
+void servo_detach()
+{
   servo.detach(); // Our modified detach() that frees the timer for the motors to use again.
+  //EXPERIMENTAL!!
+  action_trundle();
 }
 
