@@ -14,6 +14,12 @@ namespace sound_caller
         if (snd)
             snd->stopNote();
     }
+    
+    void playNote()
+    {
+        if (snd)
+            snd->playNote();
+    }
 }
 
 Sound::Sound(int pin)
@@ -24,14 +30,28 @@ Sound::Sound(int pin)
   // Create our timer
   SimpleTimer _timer;
   
+  // Disabled by default so as not to make the servo crazy.
+  this->_enabled = 0;
+  
   sound_caller::snd = this;
+}
+
+void Sound::enable()
+{
+  this->_enabled = 1;
+}
+
+
+void Sound::disable()
+{
+  this->_enabled = 0;
 }
 
 void Sound::update()
 {
   _timer.run();
 }
-
+/*
 void Sound::nextNote()
 {
   ++_current_note;
@@ -43,35 +63,56 @@ void Sound::nextNote()
    _current_note = 0; 
   }
 }
+*/
 
 void Sound::stopNote()
 {
   // stop the tone playing:
   noNewTone(_pin);
-  nextNote();
+  // play the next one if there is one
+  playNote();
 }
 
-void Sound::playNote(int note)
+void Sound::playNote()
 {
-  int dur = _noteDurations[note];
+  
+  if (!this->_enabled) {
+    // Not going to play sound unless explicitly told it's safe to do so.
+    // ALL servos must be detached.
+   return; 
+  }
+  
+  // @todo: remove hard coding to the 8 note melody
+  if (_current_note > 8) {
+    // Nothing left to play
+    this->disable();
+    return;
+  }
+  
+  int dur = _noteDurations[_current_note];
   int noteDuration = 1000/dur;
   this->_playing = 1;
-  NewTone(_pin, _melody[note], noteDuration);
-
+  NewTone(_pin, _melody[_current_note], noteDuration);
+  
   // to distinguish the notes, set a minimum time between them.
   // the note's duration + 30% seems to work well:
   int pauseBetweenNotes = noteDuration * 1.30;
-  Serial.print(_melody[note]); 
+  Serial.print(_melody[_current_note]); 
   Serial.print(" : ");
   Serial.println(pauseBetweenNotes);
+  
+  ++_current_note;
   _timer.setTimeout(pauseBetweenNotes, sound_caller::stopNote);
+
 }
 
 void Sound::playMelody(int melody[], int noteDurations[]) 
 {
   this->_melody = melody;
   this->_noteDurations = noteDurations;
-  playNote(_current_note);
+  this->enable();
+  _current_note = 0;
+  playNote();
 }
 
 

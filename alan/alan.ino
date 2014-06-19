@@ -38,13 +38,13 @@
 #include <util/delay.h>
 
 #include <NewPing.h> // From https://code.google.com/p/arduino-new-ping/
-#include <NewTone.h> // From https://code.google.com/p/arduino-new-tone/
+#include "NewTone.h" // Adapted from https://code.google.com/p/arduino-new-tone/
 
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
-
-#include "ServoTimer2.h"
+#include <Servo.h>
+//#include "ServoTimer2.h"
 
 #include "Sound.h"
 
@@ -113,7 +113,8 @@ SimpleTimer timer;
 // Create the sound playing object.
 Sound snd(sound_pin);
 
-ServoTimer2 servo;
+//ServoTimer2 servo;
+Servo servo_pinger;
 
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see debugging messages.
@@ -138,10 +139,6 @@ void setup() {
   // Start moving!
   //timer_action = timer.setTimeout(100, action_trundle);
   timer_action = timer.setTimeout(100, experimental_servoMove);
-  
-  // Start singing
-  //playMelody();
-  
 
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
@@ -247,9 +244,12 @@ void ping_measure()
       // Don't hit the obstacle.
       motion_stop();
       
+      // Make sure it's safe to play sounds
+      servo_detach_all();
+
       // play sound
       playMelody();
-    
+
       // back up
       motion_rev();
       
@@ -463,18 +463,25 @@ void motion_rotateRight()
 void experimental_servoMove() 
 {
   Serial.println("experimental_servoMove");
+  
+  
   // Can't move servo & motor at the same time.
-  action_stop();
+  //action_stop();
  
-  servo.attach(6);
-  servo.write(random(1100, 1800));
+  servo_pinger.attach(6);
+  servo_pinger.write(random(1100, 1800));
   timer.setTimeout(500, servo_detach);
 }
 
 void servo_detach()
 {
-  servo.detach(); // Our modified detach() that frees the timer for the motors to use again.
+  servo_pinger.detach(); 
   //EXPERIMENTAL!!
   action_trundle();
+}
+
+void servo_detach_all()
+{
+  servo_pinger.detach();
 }
 
