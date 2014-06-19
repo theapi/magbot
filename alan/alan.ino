@@ -3,7 +3,27 @@
  Two motors attached to the motor shield.
  speaker/piezo for sound
  
- Arduino Uno has three timers; timer 0, timer 1, timer 2,
+ Arduino Uno has three timers; timer 0, timer 1, timer 2
+ Timers can be used without their output going to the pins, the PWM pins.
+
+  timer 0 (controls pin 5, 6)  
+  timer 1 (controls pin 10, 9)
+  timer 2 (controls pin 3, 11) 
+  
+ Timing functions we use:
+ 
+  timer 0 - Arduino time functions; millis()
+  timer 1 - Generates the tones for sound 
+  timer 2 - Generates the pulses for driving the motors a varying speeds
+  
+ PWM (timer) pins we use:
+  timer 0 pin 5  - Unused
+  timer 0 pin 6  - Unused
+  timer 1 pin 9  - Brake for motor A. Can only be used for digitalRead() & digitalWrite()
+  timer 1 pin 10 - Unused.            Can only be used for digitalRead() & digitalWrite()
+  timer 2 pin 3  - Motor A to control speed.
+  timer 2 pin 11 - Motor B to control speed.
+ 
  Timer 0 is used by the arduino for millis().
  The motorshield uses timer 2, for pwm on pins 3 & 11.
  Since the standard arduino tone function uses timer 2 also, 
@@ -16,6 +36,7 @@
  */
 
 #include <util/delay.h>
+
 #include <NewPing.h> // From https://code.google.com/p/arduino-new-ping/
 #include <NewTone.h> // From https://code.google.com/p/arduino-new-tone/
 
@@ -23,6 +44,7 @@
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
 
+#include "ServoTimer2.h"
 
 #include "Sound.h"
 
@@ -88,11 +110,13 @@ byte action_done = 0; // mnmm needs explaining
 // although there is little point in doing so.
 SimpleTimer timer;
 
-// Creat the sound playing object.
+// Create the sound playing object.
 Sound snd(sound_pin);
 
+ServoTimer2 servo;
+
 void setup() {
-  Serial.begin(9600); // Open serial monitor at 9600 baud to see ping results.
+  Serial.begin(9600); // Open serial monitor at 9600 baud to see debugging messages.
   
   
   // Setup Channel A
@@ -121,6 +145,11 @@ void setup() {
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
+  
+  int timer_experimental = timer.setInterval(30000, experimental_servoMove);
+  Serial.print("Servo tick started id=");
+  Serial.println(timer_experimental);
+  
 }
 
 void loop() 
@@ -428,5 +457,20 @@ void motion_rotateRight()
     analogWrite(motorB_pwm, 75);   
     motion_state = M_ROTATE_RIGHT; 
   }
+}
+
+void experimental_servoMove() 
+{
+  // Can't move servo & motor at the same time.
+  motion_stop();
+  
+  // Stop the motor pins being outputs.
+  pinMode(motorA_pwm, INPUT);
+  pinMode(motorB_pwm, INPUT); 
+  
+  servo.attach(19);
+  servo.write(1500);
+  delay(1000); // yeah it's experimental
+  servo.detach(); // Our modified detach() that frees the timer for the motors to use again.
 }
 
