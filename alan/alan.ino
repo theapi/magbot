@@ -56,7 +56,7 @@ int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
 unsigned long melody_delay = 10000; // Number of milliseconds to wait before next melody
 
-// The motion states, so we alwasys no where we're going.
+// The motion states, so we always know where we're going.
 enum motion_states {
   M_STOP, 
   M_FWD, 
@@ -67,7 +67,7 @@ enum motion_states {
 // The curent motion state.
 motion_states motion_state = M_STOP;
 
-// The action states, so we alwasys no what action is currently happening.
+// The action states, so we always know what action is currently happening.
 enum action_states {
   A_STOPPED,
   A_TRUNDLE, 
@@ -117,13 +117,6 @@ void setup() {
   // Start singing
   playMelody();
   
-
-  
-  /*
-  int timer_melody = timer.setInterval(melody_delay, playMelody);
-  Serial.print("Melody tick started id=");
-  Serial.println(timer_melody);
-  */
   
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
