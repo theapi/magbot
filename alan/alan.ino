@@ -48,6 +48,11 @@
 
 #include "Sound.h"
 
+#define MOTOR_SPEED_MIN_A 200
+#define MOTOR_SPEED_MAX_A 230 // This motor is slower on my setup.
+#define MOTOR_SPEED_MIN_B 200
+#define MOTOR_SPEED_MAX_B 255
+
 // Motor attached to channel A:
 const byte motorA_direction = 12;
 const byte motorA_pwm = 3;
@@ -250,11 +255,14 @@ void ping_measure()
       // play sound
       playMelody();
 
+
+      action_pingSearch();
+      
       // back up
-      motion_rev();
+      //motion_rev();
       
       // then after a second, search for a new direction.
-      timer.setTimeout(1500, action_pingSearch);
+      //timer.setTimeout(1500, action_pingSearch);
     }
     /*
     Serial.print("Ping: ");
@@ -293,20 +301,27 @@ void action_run()
     case A_PINGSEARCH:
       switch (motion_state) {
         case M_STOP:
-        Serial.println("SEARCH LEFT");
-          // Start pinging
-          ping_start();
-  
-          action_timeoutStart(1000);
-          // Rotate left for 1 second
-          motion_rotateLeft();          
+           // reverse for 1 second
+           action_timeoutStart(1000);
+           motion_rev(); 
+           Serial.println("SEARCH REVERSE");    
+          break;
+          
+        case M_REV:
+          if (action_done) {
+            Serial.println("SEARCH LEFT");
+            // Start pinging
+            ping_start();
+          
+            action_timeoutStart(500); //@todo not fake the search!
+            motion_rotateLeft(); 
+          }
           break;
           
         case M_ROTATE_LEFT:
           if (action_done) {
             Serial.println("SEARCH RIGHT");
             action_timeoutStart(2000); //@todo not fake the search!
-            // Rotate left
             motion_rotateRight(); 
           }
           break;
@@ -379,9 +394,7 @@ void action_trundle()
 void action_pingSearch()
 {
   Serial.println("SEARCHING");
-
-  motion_stop();
-  // Set the state, so the action can complete.
+  // Set the state, so the action can be handeled by the state machine.
   action_state = A_PINGSEARCH;
 }
 
@@ -417,19 +430,18 @@ void motion_fwd()
 //@todo: set speed
   digitalWrite(motorA_direction, HIGH); // Channel A forward
   digitalWrite(motorB_direction, HIGH); // Channel B forward
-  analogWrite(motorA_pwm, 250); // Channel A at max speed 
-  analogWrite(motorB_pwm, 250); // Channel B at max speed 
+  analogWrite(motorA_pwm, MOTOR_SPEED_MAX_A); // Channel A at max speed 
+  analogWrite(motorB_pwm, MOTOR_SPEED_MAX_B); // Channel B at max speed 
   motion_state = M_FWD;
 }
 
 void motion_rev()
 {
-  
-//@todo: set speed
+
     digitalWrite(motorA_direction, LOW); // Channel A backward
     digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, 200); // Channel A at half speed 
-    analogWrite(motorB_pwm, 200); // Channel B at half speed   
+    analogWrite(motorA_pwm, MOTOR_SPEED_MIN_A); // Channel A at minimum speed 
+    analogWrite(motorB_pwm, MOTOR_SPEED_MIN_B); // Channel B at minimum speed   
     motion_state = M_REV; 
   
 }
@@ -438,11 +450,10 @@ void motion_rotateLeft()
 {
   
     Serial.println("LEFT");
-//@todo: set speed
     digitalWrite(motorA_direction, HIGH); // Channel A forward
     digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, 200);
-    analogWrite(motorB_pwm, 200);   
+    analogWrite(motorA_pwm, MOTOR_SPEED_MIN_A);
+    analogWrite(motorB_pwm, MOTOR_SPEED_MIN_B);   
     motion_state = M_ROTATE_LEFT; 
   
 }
@@ -451,11 +462,10 @@ void motion_rotateRight()
 {
   
     Serial.println("RIGHT");
-//@todo: set speed
     digitalWrite(motorA_direction, LOW); // Channel A backward
     digitalWrite(motorB_direction, HIGH); // Channel B forward
-    analogWrite(motorA_pwm, 200);
-    analogWrite(motorB_pwm, 200);   
+    analogWrite(motorA_pwm, MOTOR_SPEED_MIN_A);
+    analogWrite(motorB_pwm, MOTOR_SPEED_MIN_B);   
     motion_state = M_ROTATE_RIGHT; 
   
 }
