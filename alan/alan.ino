@@ -20,7 +20,7 @@
   timer 0 pin 5  - Unused
   timer 0 pin 6  - Unused
   timer 1 pin 9  - Brake for motor A. Can only be used for digitalRead() & digitalWrite()
-  timer 1 pin 10 - Unused.            Can only be used for digitalRead() & digitalWrite()
+  timer 1 pin 10 - IR receiver.            Can only be used for digitalRead() & digitalWrite()
   timer 2 pin 3  - Motor A to control speed.
   timer 2 pin 11 - Motor B to control speed.
  
@@ -37,16 +37,22 @@
 
 #include <util/delay.h>
 
-#include <NewPing.h> // From https://code.google.com/p/arduino-new-ping/
+#include "NewPing.h" // Adapted from https://code.google.com/p/arduino-new-ping/
 #include "NewTone.h" // Adapted from https://code.google.com/p/arduino-new-tone/
+
+#include <IRremote.h>
 
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
 #include <Servo.h>
 //#include "ServoTimer2.h"
-
 #include "Sound.h"
+
+
+// Define the DIO pin used for the receiver 
+#define RECV_PIN 10
+
 
 #define MOTOR_SPEED_MIN_A 200
 #define MOTOR_SPEED_MAX_A 230 // This motor is slower on my setup.
@@ -55,12 +61,12 @@
 
 // Motor attached to channel A:
 const byte motorA_direction = 12;
-const byte motorA_pwm = 3;
+const byte motorA_pwm = 5; // Re-wired from the shield's default of 3
 const byte motorA_brake = 9;
 const byte motorA_sensor = A0;
 // Motor attached to channel B:
 const byte motorB_direction = 13;
-const byte motorB_pwm = 11;
+const byte motorB_pwm = 6; // Re-wired from the shield's default of 11
 const byte motorB_brake = 8;
 const byte motorB_sensor = A1;
 
@@ -82,6 +88,13 @@ const byte sound_pin = 2;
 int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
 int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
 unsigned long melody_delay = 10000; // Number of milliseconds to wait before next melody
+
+/* Structure containing received data */
+decode_results results;/* Used to store the last code received. Used when a repeat code is received */
+unsigned long LastCode;
+
+/* Create an instance of the IRrecv library */
+IRrecv irrecv(RECV_PIN);
 
 // The motion states, so we always know where we're going.
 enum motion_states {
@@ -124,6 +137,13 @@ Servo servo_pinger;
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see debugging messages.
   
+  irrecv.enableIRIn();
+  /* Initialise the variable containing the last code received */
+  LastCode = 0;
+  
+  pinMode(3, INPUT); // Re-wired from the shield's default
+  pinMode(11, INPUT); // Re-wired from the shield's default
+  
   
   // Setup Channel A
   pinMode(motorA_direction, OUTPUT); // Initiates motor pin for channel A
@@ -137,13 +157,15 @@ void setup() {
   digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
-  pinMode(6, OUTPUT); 
   
   batteryLevel();
   
+  
+  action_stop();
+  
   // Start moving!
   //timer_action = timer.setTimeout(100, action_trundle);
-  timer_action = timer.setTimeout(100, experimental_servoMove);
+  //timer_action = timer.setTimeout(100, experimental_servoMove);
 
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
@@ -153,6 +175,18 @@ void setup() {
 
 void loop() 
 {
+  
+    /* Has a new code been received? */
+  if (irrecv.decode(&results))
+  {
+    /* If so get the button name for the received code */
+    ir_handleInput(results.value);
+    //GetIRIndex(results.value);
+    //Serial.println(GetIRIndex(results.value));
+    /* Start receiving codes again*/
+    irrecv.resume();
+  }
+  
   // Let the timers do their thing.
   timer.run();
   action_run();
@@ -230,7 +264,7 @@ void ping_stop()
 void ping_measure()
 {
   unsigned int cm = sonar.ping_cm(); // Send a ping, get ping distance in cm.
-  
+  //unsigned int cm = 0;
   if (action_state == A_PINGSEARCH) {
     
     // looking for a new way to go.
@@ -493,5 +527,117 @@ void servo_detach()
 void servo_detach_all()
 {
   servo_pinger.detach();
+}
+
+
+
+/* Function returns the button name relating to the received code */
+void ir_handleInput(unsigned long code){
+  /* Character array used to hold the received button name */
+  char CodeName[3];
+  /* Is the received code is a repeat code (NEC protocol) */
+  if (code == 0xFFFFFFFF)
+  {
+    /* If so then we need to find the button name for the last button pressed */
+    code = LastCode;
+  }
+  /* Save this code incase we get a repeat code next time */
+  LastCode = code;
+  
+  /* Find the button name for the received code */
+  switch (code)
+  {
+    /* Received code is for the POWER button */
+  case 0xFFA25D:
+    strcpy (CodeName, "PW");
+    break;
+    /* Received code is for the MODE button */
+  case 0xFF629D:
+    strcpy (CodeName, "MO");
+    break;
+    /* Received code is for the MUTE button */
+  case 0xFFE21D:
+    strcpy (CodeName, "MU");
+    break;
+    /* Received code is for the PLAY/PAUSE button */
+  case 0xFF22DD:
+    strcpy (CodeName, "RW");
+    break;
+    /* Received code is for the REWIND button */
+  case 0xFF02FD:
+    strcpy (CodeName, "FW");
+    break;
+    /* Received code is for the FAST FORWARD button */
+  case 0xFFC23D:
+    strcpy (CodeName, "PL");
+    action_trundle();
+    break;
+    /* Received code is for the EQ button */
+  case 0xFFE01F:
+    strcpy (CodeName, "EQ");
+    break;
+    /* Received code is for the VOLUME - button */
+  case 0xFFA857:
+    strcpy (CodeName, "-");
+    break;
+    /* Received code is for the VOLUME + button */
+  case 0xFF906F:
+    strcpy (CodeName, "+");
+    break;
+    /* Received code is for the number 0 button */
+  case 0xFF6897:
+    strcpy (CodeName, "0");
+    break;/* Received code is for the RANDOM button */
+  case 0xFF9867:
+    strcpy (CodeName, "RN");
+    break;
+    /* Received code is for the UD/SD button */
+  case 0xFFB04F:
+    strcpy (CodeName, "SD");
+    break;
+    /* Received code is for the number 1 button */
+  case 0xFF30CF:
+    strcpy (CodeName, "1");
+    action_stop();
+    break;
+    /* Received code is for the number 2 button */
+  case 0xFF18E7:
+    strcpy (CodeName, "2");
+    break;
+    /* Received code is for the number 3 button */
+  case 0xFF7A85:
+    strcpy (CodeName, "3");
+    break;
+    /* Received code is for the number 4 button */
+  case 0xFF10EF:
+    strcpy (CodeName, "4");
+    break;
+    /* Received code is for the number 5 button */
+  case 0xFF38C7:
+    strcpy (CodeName, "5");
+    break;
+    /* Received code is for the number 6 button */
+  case 0xFF5AA5:
+    strcpy (CodeName, "6");
+    break;
+    /* Received code is for the number 7 button */
+  case 0xFF42BD:
+    strcpy (CodeName, "7");
+    break;
+    /* Received code is for the number 8 button */
+  case 0xFF4AB5:
+    strcpy (CodeName, "8");
+    break;
+    /* Received code is for the number 9 button */
+  case 0xFF52AD:
+    strcpy (CodeName, "9");
+    break;
+    /* Received code is an error or is unknown */
+  default:
+    strcpy (CodeName, "??");
+    break;
+  }
+  
+ Serial.println(CodeName);
 }
 
