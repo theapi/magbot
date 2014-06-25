@@ -78,8 +78,14 @@ const byte ping_delay = 200; // Number of milliseconds to wait before next ping
 NewPing sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins and maximum distance.
 int ping_timer = 0; // Stores the timer used for the ping sonar.
 
+// Whiskers setup
+const byte whiskers_horiz = A5; // The analog input pin
+int whiskers_horiz_default = 512; // Assume half of full analoge read.
+const byte whiskers_delay = 200; // How often to check the whiskers (milliseconds).
+int whiskers_timer = 0; // Stores the timer used for the whiskers.
+
 // Battery configuration
-const byte battery_led = 5;
+//const byte battery_led = 5;
 unsigned long battery_delay = 15000; // Number of milliseconds to wait before next battery reading
 
 // Sound configuration
@@ -157,19 +163,18 @@ void setup() {
   digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
-  
-  batteryLevel();
-  
-  
-  action_stop();
-  
-  // Start moving!
-  //timer_action = timer.setTimeout(100, action_trundle);
-  //timer_action = timer.setTimeout(100, experimental_servoMove);
-
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
+  
+  action_stop();
+  batteryLevel();
+  whiskersCalibrate();
+  //whiskersStart();
+  
+  
+
+  
   
 }
 
@@ -198,7 +203,7 @@ void batteryLevel()
   // Check battery level
   long vcc = readVcc();
   byte batt = map(vcc - 3000, 0, 2000, 0, 255);
-  analogWrite(battery_led, batt);
+  //analogWrite(battery_led, batt);
   Serial.print("Battery: ");
   Serial.print(vcc);
   Serial.print(" : ");
@@ -291,12 +296,7 @@ void ping_measure()
 
 
       action_pingSearch();
-      
-      // back up
-      //motion_rev();
-      
-      // then after a second, search for a new direction.
-      //timer.setTimeout(1500, action_pingSearch);
+
     }
     /*
     Serial.print("Ping: ");
@@ -371,8 +371,8 @@ void action_run()
             
             
             // Trundle away
-            //action_trundle();
-            experimental_servoMove();
+            action_trundle();
+            //experimental_servoMove();
           }
           break;
       }
@@ -405,6 +405,7 @@ void action_stop()
   action_state = A_STOPPED;
   motion_stop();
   ping_stop();
+  whiskersStop();
 }
 
 /**
@@ -412,14 +413,19 @@ void action_stop()
  */
 void action_trundle()
 {
-  Serial.println("TRUNDLING...");
-  // Remeber that we're trundling along.
-  action_state = A_TRUNDLE;
+  if (action_state != A_TRUNDLE) {
+    Serial.println("TRUNDLING...");
+    // Remeber that we're trundling along.
+    action_state = A_TRUNDLE;
+    
+    // Start pinging
+    ping_start();
+    
+    // Start feeling
+    whiskersStart();
   
-  // Start pinging
-  ping_start();
-
-  motion_fwd();
+    motion_fwd();
+  }
 }
 
 /**
@@ -504,32 +510,62 @@ void motion_rotateRight()
   
 }
 
-void experimental_servoMove() 
+/********************************************************************************
+Whiskers functions
+********************************************************************************/
+
+void whiskersCalibrate()
 {
-  Serial.println("experimental_servoMove");
+  whiskers_horiz_default = analogRead(whiskers_horiz);
+  Serial.print("whisker calibration: ");
+  Serial.println(whiskers_horiz_default);
+}
+
+void whiskersStart()
+{
+  if (whiskers_timer == 0) {
+    whiskers_timer = timer.setInterval(whiskers_delay, whiskersCheck);
+  } else {
+    timer.enable(whiskers_timer); 
+  }
+  Serial.println("Whiskers started");
+}
+
+void whiskersStop()
+{
+  timer.disable(whiskers_timer);
+  Serial.println("Whiskers stopped");
+}
+
+void whiskersCheck()
+{
+  int val = analogRead(whiskers_horiz);
   
+  //Serial.print("whisker read: ");
+  //Serial.println(val);
   
-  // Can't move servo & motor at the same time.
-  //action_stop();
- 
-  servo_pinger.attach(6);
-  servo_pinger.write(random(1100, 1800));
-  timer.setTimeout(500, servo_detach);
+  // If the reading of the thumbstick is not the same as when calibrated,
+  // we've hit something.
+  if (action_state == A_PINGSEARCH) {
+    
+    // Doing a ping search already, so don't interfere with a whiskers bump. 
+    
+  } else if ( (val > whiskers_horiz_default + 30) || (val < whiskers_horiz_default - 30) ) {
+    Serial.println(whiskers_horiz_default);
+       Serial.println("BUMP!");
+      
+      // Don't hit the obstacle.
+      motion_stop();
+      
+      action_pingSearch();
+  }
+  
 }
 
-void servo_detach()
-{
-  servo_pinger.detach(); 
-  //EXPERIMENTAL!!
-  action_trundle();
-}
 
-void servo_detach_all()
-{
-  servo_pinger.detach();
-}
-
-
+/********************************************************************************
+IR remote functions
+********************************************************************************/
 
 /* Function returns the button name relating to the received code */
 void ir_handleInput(unsigned long code){
@@ -639,5 +675,34 @@ void ir_handleInput(unsigned long code){
   }
   
  Serial.println(CodeName);
+}
+
+/********************************************************************************
+Experimental functions
+********************************************************************************/
+
+void experimental_servoMove() 
+{
+  Serial.println("experimental_servoMove");
+  
+  
+  // Can't move servo & motor at the same time.
+  //action_stop();
+ 
+  servo_pinger.attach(6);
+  servo_pinger.write(random(1100, 1800));
+  timer.setTimeout(500, servo_detach);
+}
+
+void servo_detach()
+{
+  servo_pinger.detach(); 
+  //EXPERIMENTAL!!
+  action_trundle();
+}
+
+void servo_detach_all()
+{
+  servo_pinger.detach();
 }
 
