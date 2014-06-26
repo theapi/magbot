@@ -37,7 +37,7 @@
 
 #include <util/delay.h>
 
-#include "NewPing.h" // Adapted from https://code.google.com/p/arduino-new-ping/
+#include "NewPingLite.h" // Adapted from https://code.google.com/p/arduino-new-ping/
 #include "NewTone.h" // Adapted from https://code.google.com/p/arduino-new-tone/
 
 #include <IRremote.h>
@@ -75,7 +75,7 @@ const byte ping_trigger = 7;  // Arduino pin tied to trigger pin on the ultrason
 const byte ping_echo = 4;  // Arduino pin tied to echo pin on the ultrasonic sensor.
 const int ping_distance = 80; // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 const byte ping_delay = 200; // Number of milliseconds to wait before next ping
-NewPing sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins and maximum distance.
+NewPingLite sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins and maximum distance.
 int ping_timer = 0; // Stores the timer used for the ping sonar.
 
 // Whiskers setup

@@ -1,5 +1,9 @@
 // ---------------------------------------------------------------------------
-// NewPing Library - v1.5 - 08/15/2012
+// NewPingLite is adapted from NewPing Library - v1.5 - 08/15/2012
+// The difference is that the timer functions have been removed.
+
+//
+// Adapted from NewPing Library - v1.5 - 08/15/2012
 //
 // AUTHOR/LICENSE:
 // Created by Tim Eckel - teckel@leethost.com
@@ -47,11 +51,15 @@
 //   sonar.ping_median(iterations) - Do multiple pings (default=5), discard out of range pings and return median in microseconds. 
 //   sonar.convert_in(echoTime) - Convert echoTime from microseconds to inches (rounds to nearest inch).
 //   sonar.convert_cm(echoTime) - Convert echoTime from microseconds to centimeters (rounds to nearest cm).
+
+// The timer functions have been removed in NewPingLite
 //   sonar.ping_timer(function) - Send a ping and call function to test if ping is complete.
 //   sonar.check_timer() - Check if ping has returned within the set distance limit.
 //   NewPing::timer_us(frequency, function) - Call function every frequency microseconds.
 //   NewPing::timer_ms(frequency, function) - Call function every frequency milliseconds.
 //   NewPing::timer_stop() - Stop the timer.
+
+
 //
 // HISTORY:
 // 08/15/2012 v1.5 - Added ping_median() method which does a user specified
@@ -100,8 +108,8 @@
 // 05/15/2012 v1.0 - Initial release.
 // ---------------------------------------------------------------------------
 
-#ifndef NewPing_h
-#define NewPing_h
+#ifndef NewPingLite_h
+#define NewPingLite_h
 
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include <Arduino.h>
@@ -111,7 +119,7 @@
 #endif
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
+
 
 // Shoudln't need to changed these values unless you have a specific need to do so.
 #define MAX_SENSOR_DISTANCE 500 // Maximum sensor distance can be as high as 500cm, no reason to wait for ping longer than sound takes to travel this distance and back.
@@ -126,24 +134,20 @@
 #define PING_MEDIAN_DELAY 29    // Millisecond delay between pings in the ping_median method.
 
 // Conversion from uS to distance (round result to nearest cm or inch).
-#define NewPingConvert(echoTime, conversionFactor) (max((echoTime + conversionFactor / 2) / conversionFactor, (echoTime ? 1 : 0)))
+#define NewPingLiteConvert(echoTime, conversionFactor) (max((echoTime + conversionFactor / 2) / conversionFactor, (echoTime ? 1 : 0)))
 
 
-class NewPing {
+class NewPingLite {
 	public:
-		NewPing(uint8_t trigger_pin, uint8_t echo_pin, int max_cm_distance = MAX_SENSOR_DISTANCE);
+		NewPingLite(uint8_t trigger_pin, uint8_t echo_pin, int max_cm_distance = MAX_SENSOR_DISTANCE);
 		unsigned int ping();
 		unsigned int ping_in();
 		unsigned int ping_cm();
 		unsigned int ping_median(uint8_t it = 5);
 		unsigned int convert_in(unsigned int echoTime);
 		unsigned int convert_cm(unsigned int echoTime);
-		void ping_timer(void (*userFunc)(void));
-		boolean check_timer();
 		unsigned long ping_result;
-		static void timer_us(unsigned int frequency, void (*userFunc)(void));
-		static void timer_ms(unsigned long frequency, void (*userFunc)(void));
-		static void timer_stop();
+		
 	private:
 		boolean ping_trigger();
 		boolean ping_wait_timer();
@@ -154,8 +158,6 @@ class NewPing {
 		volatile uint8_t *_echoInput;
 		unsigned int _maxEchoTime;
 		unsigned long _max_time;
-		static void timer_setup();
-		static void timer_ms_cntdwn();
 };
 
 
