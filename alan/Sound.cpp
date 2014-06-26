@@ -51,24 +51,11 @@ void Sound::update()
 {
   _timer.run();
 }
-/*
-void Sound::nextNote()
-{
-  ++_current_note;
-  // @todo: remove hard coding to the 8 note melody
-  if (_current_note < 8) {
-    playNote(_current_note);
-  } else {
-    // reset the counter
-   _current_note = 0; 
-  }
-}
-*/
 
 void Sound::stopNote()
 {
   // stop the tone playing:
-  noNewTone(_pin);
+  noNewToneB(_pin);
   // play the next one if there is one
   playNote();
 }
@@ -92,7 +79,7 @@ void Sound::playNote()
   int dur = _noteDurations[_current_note];
   int noteDuration = 1000/dur;
   this->_playing = 1;
-  NewTone(_pin, _melody[_current_note], noteDuration);
+  NewToneB(_pin, _melody[_current_note], noteDuration);
   
   // to distinguish the notes, set a minimum time between them.
   // the note's duration + 30% seems to work well:
