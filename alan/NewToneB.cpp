@@ -2,19 +2,19 @@
 // Created by Tim Eckel - teckel@leethost.com
 // Copyright 2013 License: GNU GPL v3 http://www.gnu.org/licenses/gpl-3.0.html
 //
-// See "NewTone.h" for purpose, syntax, version history, links, and more.
+// See "NewToneB.h" for purpose, syntax, version history, links, and more.
 // ---------------------------------------------------------------------------
 
 // Tweeked to use ISR(TIMER1_COMPB_vect) so Servo library can be used too
 // as long as a tone is not played while a servo is attached.
 
-#include "NewTone.h"
+#include "NewToneB.h"
 
 unsigned long _nt_time;       // Time note should end.
 uint8_t _pinMask = 0;         // Pin bitmask.
 volatile uint8_t *_pinOutput; // Output port register
 
-void NewTone(uint8_t pin, unsigned long frequency, unsigned long length) {
+void NewToneB(uint8_t pin, unsigned long frequency, unsigned long length) {
   uint8_t prescaler = _BV(CS10);                 // Try using prescaler 1 first.
   unsigned long top = F_CPU / frequency / 4 - 1; // Calculate the top.
   if (top > 65535) {                             // If not in the range for prescaler 1, use prescaler 256 (61 Hz and lower @ 16 MHz).
@@ -38,7 +38,7 @@ void NewTone(uint8_t pin, unsigned long frequency, unsigned long length) {
   TIMSK1 |= _BV(OCIE1B);             // Activate the timer interrupt.
 }
 
-void noNewTone(uint8_t pin) {
+void noNewToneB(uint8_t pin) {
   TIMSK1 &= ~_BV(OCIE1B);   // Remove the timer interrupt.
   TCCR1B  = _BV(CS11);      // Default clock prescaler of 8.
   TCCR1A  = _BV(WGM10);     // Set to defaults so PWM can work like normal (PWM, phase corrected, 8bit).
@@ -48,7 +48,7 @@ void noNewTone(uint8_t pin) {
 
 
 ISR(TIMER1_COMPB_vect) { // Timer interrupt vector.
-  if (millis() >= _nt_time) noNewTone(); // Check to see if it's time for the note to end.
+  if (millis() >= _nt_time) noNewToneB(); // Check to see if it's time for the note to end.
   *_pinOutput ^= _pinMask; // Toggle the pin state.
 }
 

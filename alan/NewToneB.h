@@ -1,3 +1,7 @@
+//
+// Tweeked to use ISR(TIMER1_COMPB_vect) so Servo library can be used too
+// as long as a tone is not played while a servo is attached.
+//
 // ---------------------------------------------------------------------------
 // NewTone Library - v1.0 - 01/20/2013
 //
@@ -20,23 +24,21 @@
 // timer 1 which may free up conflicts with the tone library.
 //
 // SYNTAX:
-//   NewTone( pin, frequency [, length ] ) - Play a note on pin at frequency in Hz.
+//   NewToneB( pin, frequency [, length ] ) - Play a note on pin at frequency in Hz.
 //     Parameters:
 //       * pin        - Pin speaker is wired to (other wire to ground, be sure to add an inline 100 ohm resistor).
 //       * frequency  - Play the specified frequency indefinitely, turn off with noNewTone().
 //       * length     - [optional] Set the length to play in milliseconds. (default: 0 [forever], range: 0 to 2^32-1)
-//   noNewTone(pin) - Stop playing note (pin is optional, will always stop playing on pin that was last used).
+//   noNewToneB(pin) - Stop playing note (pin is optional, will always stop playing on pin that was last used).
 //
 // HISTORY:
 // 01/20/2013 v1.0 - Initial release.
 //
-// Tweeked to use ISR(TIMER1_COMPB_vect) so Servo library can be used too
-// as long as a tone is not played while a servo is attached.
 //
 // ---------------------------------------------------------------------------
 
-#ifndef NewTone_h
-  #define NewTone_h
+#ifndef NewToneB_h
+  #define NewToneB_h
 
   #if defined(ARDUINO) && ARDUINO >= 100
     #include <Arduino.h>
@@ -48,6 +50,6 @@
     #define TIMSK1 TIMSK
   #endif
 
-  void NewTone(uint8_t pin, unsigned long frequency, unsigned long length = 0);
-  void noNewTone(uint8_t pin = 0);
+  void NewToneB(uint8_t pin, unsigned long frequency, unsigned long length = 0);
+  void noNewToneB(uint8_t pin = 0);
 #endif
