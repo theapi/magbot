@@ -3,6 +3,33 @@
  Two motors attached to the motor shield.
  speaker/piezo for sound
  
+ PIN ALLOCATION:
+ 
+ 13 - Motor B direction
+ 12 - Motor A direction
+ 11 - (blocked by shield)
+ 10 - Infrared remote receiver
+ 9  - Battery LED 1 (cut brake connect on bottom of the shield)
+ 8  - Battery LED 2 (cut brake connect on bottom of the shield)
+ 7  - Ping trigger
+ 6  - Motor B pwm
+ 5  - Motor A pwm
+ 4  - Ping echo
+ 3  - (blocked by shield)
+ 2  - Sound
+ 1  - not connected (Serial write)
+ 0  - not connected (Serial read)
+ 
+ A0 - Motor current sensor (not used)
+ A1 - Motor current sensor (not used)
+ A2 - Battery LED 3
+ A3 - unused
+ A4 - Thumbstick vertical
+ A5 - Thumbstick horizontal
+ 
+ 
+ ABOUT THE TIMERS:
+ 
  Arduino Uno has three timers; timer 0, timer 1, timer 2
  Timers can be used without their output going to the pins, the PWM pins.
 
@@ -13,25 +40,16 @@
  Timing functions we use:
  
   timer 0 - Arduino time functions; millis()
-  timer 1 - Generates the tones for sound 
+  timer 1 - Generates the tones for sound AND movement for servos, but not at the same time.
   timer 2 - Generates the pulses for driving the motors a varying speeds
   
  PWM (timer) pins we use:
-  timer 0 pin 5  - Unused
-  timer 0 pin 6  - Unused
-  timer 1 pin 9  - Brake for motor A. Can only be used for digitalRead() & digitalWrite()
-  timer 1 pin 10 - IR receiver.            Can only be used for digitalRead() & digitalWrite()
-  timer 2 pin 3  - Motor A to control speed.
-  timer 2 pin 11 - Motor B to control speed.
- 
- Timer 0 is used by the arduino for millis().
- The motorshield uses timer 2, for pwm on pins 3 & 11.
- Since the standard arduino tone function uses timer 2 also, 
- we have to use a different library "NewTone" this uses timer 1 instead
- which means no pwm on pins 10 & 9. it also means it is incompatable with the 
- standard servo library.
- So we have pwm left on pins 5 & 6 to put some leds on.
- 
+  timer 0 pin 5  - Motor A to control speed.
+  timer 0 pin 6  - Motor B to control speed.
+  timer 1 pin 9  - Battery LED 1.  Can only be used for digitalRead() & digitalWrite()
+  timer 1 pin 10 - IR receiver.    Can only be used for digitalRead() & digitalWrite()
+  timer 2 pin 3  - Cannot be used as pin (blocked by shield)
+  timer 2 pin 11 - Cannot be used as pin (blocked by shield)
  
  */
 
@@ -46,7 +64,6 @@
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
 #include <Servo.h>
-//#include "ServoTimer2.h"
 #include "Sound.h"
 
 
@@ -85,7 +102,6 @@ const byte whiskers_delay = 200; // How often to check the whiskers (millisecond
 int whiskers_timer = 0; // Stores the timer used for the whiskers.
 
 // Battery configuration
-//const byte battery_led = 5;
 unsigned long battery_delay = 15000; // Number of milliseconds to wait before next battery reading
 
 // Sound configuration
