@@ -167,15 +167,10 @@ void setup() {
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
   
-  action_stop();
+  actionStop();
   batteryLevel();
   whiskersCalibrate();
-  //whiskersStart();
-  
-  
 
-  
-  
 }
 
 void loop() 
@@ -185,7 +180,7 @@ void loop()
   if (irrecv.decode(&results))
   {
     /* If so get the button name for the received code */
-    ir_handleInput(results.value);
+    irHandleInput(results.value);
     //GetIRIndex(results.value);
     //Serial.println(GetIRIndex(results.value));
     /* Start receiving codes again*/
@@ -194,7 +189,7 @@ void loop()
   
   // Let the timers do their thing.
   timer.run();
-  action_run();
+  actionRun();
   snd.update();
 }
 
@@ -250,23 +245,23 @@ long readVcc()
 Ping functions
 ********************************************************************************/
 
-void ping_start()
+void pingStart()
 {
   if (ping_timer == 0) {
-    ping_timer = timer.setInterval(ping_delay, ping_measure);
+    ping_timer = timer.setInterval(ping_delay, pingMeasure);
   } else {
     timer.enable(ping_timer); 
   }
   Serial.println("Ping started"); 
 }
 
-void ping_stop()
+void pingStop()
 {
   timer.disable(ping_timer);
   Serial.println("Ping stopped"); 
 }
 
-void ping_measure()
+void pingMeasure()
 {
   unsigned int cm = sonar.ping_cm(); // Send a ping, get ping distance in cm.
   //unsigned int cm = 0;
@@ -283,19 +278,19 @@ void ping_measure()
       Serial.println("Too close!");
       
       // No more pinging for now.
-      ping_stop();
+      pingStop();
       
       // Don't hit the obstacle.
-      motion_stop();
+      motionStop();
       
       // Make sure it's safe to play sounds
-      servo_detach_all();
+      servoDetachAll();
 
       // play sound
       playMelody();
 
 
-      action_pingSearch();
+      actionPingSearch();
 
     }
     /*
@@ -314,7 +309,7 @@ Action functions
 /**
  * The "state machine" that handles action.
  */
-void action_run()
+void actionRun()
 {
   /*
   Serial.print("action_run ");
@@ -336,8 +331,8 @@ void action_run()
       switch (motion_state) {
         case M_STOP:
            // reverse for 1 second
-           action_timeoutStart(1000);
-           motion_rev(); 
+           actionTimeoutStart(1000);
+           motionRev(); 
            Serial.println("SEARCH REVERSE");    
           break;
           
@@ -345,18 +340,18 @@ void action_run()
           if (action_done) {
             Serial.println("SEARCH LEFT");
             // Start pinging
-            ping_start();
+            pingStart();
           
-            action_timeoutStart(500); //@todo not fake the search!
-            motion_rotateLeft(); 
+            actionTimeoutStart(500); //@todo not fake the search!
+            motionRotateLeft(); 
           }
           break;
           
         case M_ROTATE_LEFT:
           if (action_done) {
             Serial.println("SEARCH RIGHT");
-            action_timeoutStart(2000); //@todo not fake the search!
-            motion_rotateRight(); 
+            actionTimeoutStart(2000); //@todo not fake the search!
+            motionRotateRight(); 
           }
           break;
           
@@ -364,15 +359,14 @@ void action_run()
           if (action_done) {
             Serial.println("SEARCH DONE");
             // Done the sweep, stop.
-            action_stop(); 
+            actionStop(); 
             
             // Stop pinging
-            ping_stop(); 
+            pingStop(); 
             
             
             // Trundle away
-            action_trundle();
-            //experimental_servoMove();
+            actionTrundle();
           }
           break;
       }
@@ -400,18 +394,18 @@ void action_run()
   }
 }
 
-void action_stop()
+void actionStop()
 {
   action_state = A_STOPPED;
-  motion_stop();
-  ping_stop();
+  motionStop();
+  pingStop();
   whiskersStop();
 }
 
 /**
  * Moves forward avoiding obstacles.
  */
-void action_trundle()
+void actionTrundle()
 {
   if (action_state != A_TRUNDLE) {
     Serial.println("TRUNDLING...");
@@ -419,35 +413,35 @@ void action_trundle()
     action_state = A_TRUNDLE;
     
     // Start pinging
-    ping_start();
+    pingStart();
     
     // Start feeling
     whiskersStart();
   
-    motion_fwd();
+    motionFwd();
   }
 }
 
 /**
  * Look for somewhare to go.
  */
-void action_pingSearch()
+void actionPingSearch()
 {
   Serial.println("SEARCHING");
   // Set the state, so the action can be handeled by the state machine.
   action_state = A_PINGSEARCH;
 }
 
-void action_timeoutStart(int duration)
+void actionTimeoutStart(int duration)
 {
   action_done = 0; 
   // Delete the previous timer, so we can use it's slot.
   timer.deleteTimer(timer_action); 
   // Start a new one.
-  timer_action = timer.setTimeout(duration, action_timeoutDone);
+  timer_action = timer.setTimeout(duration, actionTimeoutDone);
 }
 
-void action_timeoutDone()
+void actionTimeoutDone()
 {
   action_done = 1; 
 }
@@ -456,7 +450,7 @@ void action_timeoutDone()
 Motion functions
 ********************************************************************************/
 
-void motion_stop()
+void motionStop()
 {
   
     analogWrite(motorA_pwm, 0); // Channel A at max speed 
@@ -465,7 +459,7 @@ void motion_stop()
   
 }
 
-void motion_fwd()
+void motionFwd()
 {
 //@todo: set speed
   digitalWrite(motorA_direction, HIGH); // Channel A forward
@@ -475,7 +469,7 @@ void motion_fwd()
   motion_state = M_FWD;
 }
 
-void motion_rev()
+void motionRev()
 {
 
     digitalWrite(motorA_direction, LOW); // Channel A backward
@@ -486,7 +480,7 @@ void motion_rev()
   
 }
 
-void motion_rotateLeft()
+void motionRotateLeft()
 {
   
     Serial.println("LEFT");
@@ -498,7 +492,7 @@ void motion_rotateLeft()
   
 }
 
-void motion_rotateRight()
+void motionRotateRight()
 {
   
     Serial.println("RIGHT");
@@ -555,9 +549,9 @@ void whiskersCheck()
        Serial.println("BUMP!");
       
       // Don't hit the obstacle.
-      motion_stop();
+      motionStop();
       
-      action_pingSearch();
+      actionPingSearch();
   }
   
 }
@@ -568,7 +562,7 @@ IR remote functions
 ********************************************************************************/
 
 /* Function returns the button name relating to the received code */
-void ir_handleInput(unsigned long code){
+void irHandleInput(unsigned long code){
   /* Character array used to hold the received button name */
   char CodeName[3];
   /* Is the received code is a repeat code (NEC protocol) */
@@ -606,7 +600,7 @@ void ir_handleInput(unsigned long code){
     /* Received code is for the FAST FORWARD button */
   case 0xFFC23D:
     strcpy (CodeName, "PL");
-    action_trundle();
+    actionTrundle();
     break;
     /* Received code is for the EQ button */
   case 0xFFE01F:
@@ -634,7 +628,7 @@ void ir_handleInput(unsigned long code){
     /* Received code is for the number 1 button */
   case 0xFF30CF:
     strcpy (CodeName, "1");
-    action_stop();
+    actionStop();
     break;
     /* Received code is for the number 2 button */
   case 0xFF18E7:
@@ -681,7 +675,7 @@ void ir_handleInput(unsigned long code){
 Experimental functions
 ********************************************************************************/
 
-void experimental_servoMove() 
+void servoMove() 
 {
   Serial.println("experimental_servoMove");
   
@@ -691,17 +685,17 @@ void experimental_servoMove()
  
   servo_pinger.attach(6);
   servo_pinger.write(random(1100, 1800));
-  timer.setTimeout(500, servo_detach);
+  timer.setTimeout(500, servoDetach);
 }
 
-void servo_detach()
+void servoDetach()
 {
   servo_pinger.detach(); 
   //EXPERIMENTAL!!
-  action_trundle();
+  actionTrundle();
 }
 
-void servo_detach_all()
+void servoDetachAll()
 {
   servo_pinger.detach();
 }
