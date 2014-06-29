@@ -2,16 +2,7 @@
 
 #include <Servo.h> 
  
-#define FLH_CENTER      1500 
-#define FLF_CENTER      1500 
-#define FRH_CENTER      1500 
-#define FRF_CENTER      1500
 
-#define RLH_CENTER      1500 
-#define RLF_CENTER      1500
-#define RRH_CENTER      1500 
-#define RRF_CENTER      1500 
- 
 #define FLH_PIN 4    // Front Left Hip servo  pin
 #define FLF_PIN 5    // Front Left Foot servo  pin
 #define FRH_PIN 6    // Front Left Foot switch pin
@@ -46,15 +37,18 @@ void setup()
   servo_rrh.attach(RRH_PIN);
   servo_rrf.attach(RRF_PIN);
   
-  servo_flh.writeMicroseconds(FLH_CENTER);
-  servo_flf.writeMicroseconds(FLF_CENTER);
-  servo_frh.writeMicroseconds(FRH_CENTER);
-  servo_frf.writeMicroseconds(FRF_CENTER);
-  
-  servo_rlh.writeMicroseconds(RLH_CENTER);
-  servo_rlf.writeMicroseconds(RLF_CENTER);
-  servo_rrh.writeMicroseconds(RRH_CENTER);
-  servo_rrf.writeMicroseconds(RRF_CENTER);
+
+  servo_flh.write(90);
+  servo_flf.write(90);
+
+  servo_frh.write(90);
+  servo_frf.write(90);
+
+  servo_rlh.write(90);
+  servo_rlf.write(90);
+
+  servo_rrh.write(90);
+  servo_rrf.write(90);
 } 
  
  

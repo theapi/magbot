@@ -21,24 +21,24 @@ Walker
 #define RRH_CENTER   90 
 #define RRF_CENTER   90 
 
-#define FLH_MAX   110 
-#define FLF_MAX   180 
-#define FRH_MAX   130 
+#define FLH_MAX   90 
+#define FLF_MAX   110 
+#define FRH_MAX   110 
 #define FRF_MAX   160
 
 #define RLH_MAX   110 
 #define RLF_MAX   160
-#define RRH_MAX   110 
-#define RRF_MAX   160 
+#define RRH_MAX   120 
+#define RRF_MAX   110 
 
-#define FLH_MIN   70 
+#define FLH_MIN   60 
 #define FLF_MIN   50 
 #define FRH_MIN   70 
 #define FRF_MIN   50
 
-#define RLH_MIN   70 
+#define RLH_MIN   50 
 #define RLF_MIN   50
-#define RRH_MIN   70 
+#define RRH_MIN   80 
 #define RRF_MIN   50 
  
 #define FLH_PIN 4    // Front Left Hip servo  pin
@@ -135,10 +135,11 @@ void motionFwd()
       break;
       
     case 2:
+      // Raise other feet
       servo_flf.write(FLF_MIN, 80);
-      servo_rrf.write(FLF_MAX, 80);
+      servo_rrf.write(RRF_MIN, 80);
       state = 3;
-      leg_timer = timer.setTimeout(3000, motionFwd);
+      leg_timer = timer.setTimeout(1000, motionFwd);
       break;
       
     case 3:
@@ -148,25 +149,47 @@ void motionFwd()
       leg_timer = timer.setTimeout(3000, motionFwd);
       break;
       
-    
-      
     case 4:
-      legFwdFrontLeft();
+      // Lower other feet
+      servo_flf.write(FLF_CENTER, 80);
+      servo_rrf.write(RRF_CENTER, 80);
       state = 5;
-      leg_timer = timer.setTimeout(3000, motionFwd);
+      leg_timer = timer.setTimeout(1000, motionFwd);
       break;
       
     case 5:
-      legFwdRearRight();
+      legFwdFrontLeft();
       state = 6;
       leg_timer = timer.setTimeout(3000, motionFwd);
       break;
       
     case 6:
+      legFwdRearRight();
+      state = 7;
+      leg_timer = timer.setTimeout(3000, motionFwd);
+      break;
+      
+    case 7:
+      // Raise other feet
+      servo_frf.write(FRF_MAX, 80);
+      servo_rlf.write(RLF_MAX, 80);
+      state = 8;
+      leg_timer = timer.setTimeout(1000, motionFwd);
+      break;
+      
+    case 8:
       legFwdCompleteFrontLeft();
       legFwdCompleteRearRight();
-      state = 0;
+      state = 9;
       leg_timer = timer.setTimeout(3000, motionFwd);
+      break;
+      
+    case 9:
+      // Raise other feet
+      servo_frf.write(FLF_CENTER, 80);
+      servo_rlf.write(RRF_CENTER, 80);
+      state = 0;
+      leg_timer = timer.setTimeout(1000, motionFwd);
       break;
   }
   
@@ -311,7 +334,7 @@ void legFwdRearRight()
       
     case 1:
       // Sweep forward
-      servo_rrh.write(RRH_MAX, 20);
+      servo_rrh.write(RRH_MIN, 20);
       // Call this function again later to put the foot down
       state = 2;
       leg_timer_rr = timer.setTimeout(2000, legFwdRearRight);
