@@ -21,35 +21,35 @@ Walker
 #define RRH_CENTER   90 
 #define RRF_CENTER   90 
 
-#define FLH_MAX   110 
-#define FLF_MAX   110 
+#define FLH_MAX   130 
+#define FLF_MAX   160 
 #define FRH_MAX   130 
 #define FRF_MAX   160
 
-#define RLH_MAX   110 
-#define RLF_MAX   110
-#define RRH_MAX   110 
-#define RRF_MAX   110 
+#define RLH_MAX   130 
+#define RLF_MAX   160
+#define RRH_MAX   130 
+#define RRF_MAX   160 
 
-#define FLH_MIN   60 
-#define FLF_MIN   60 
+#define FLH_MIN   50 
+#define FLF_MIN   50 
 #define FRH_MIN   50 
-#define FRF_MIN   60
+#define FRF_MIN   50
 
-#define RLH_MIN   60 
-#define RLF_MIN   60
-#define RRH_MIN   60 
-#define RRF_MIN   60 
+#define RLH_MIN   50 
+#define RLF_MIN   50
+#define RRH_MIN   50 
+#define RRF_MIN   50 
  
-#define FLH_PIN 4    // Front Left Hip servo  pin
-#define FLF_PIN 5    // Front Left Foot servo  pin
-#define FRH_PIN 6    // Front Right Foot switch pin
-#define FRF_PIN 7    // Front Right Foot switch pin
+#define FLH_PIN 2    // Front Left Hip servo  pin
+#define FLF_PIN 3    // Front Left Foot servo  pin
+#define FRH_PIN 4    // Front Right Foot switch pin
+#define FRF_PIN 5    // Front Right Foot switch pin
 
-#define RLH_PIN 8    // Rear Left Hip switch pin
-#define RLF_PIN 9    // Rear Left Foot switch pin
-#define RRH_PIN 10   // Rear Right Foot switch pin
-#define RRF_PIN 11   // Rear Left Foot switch pin
+#define RLH_PIN 6    // Rear Left Hip switch pin
+#define RLF_PIN 7    // Rear Left Foot switch pin
+#define RRH_PIN 8   // Rear Right Foot switch pin
+#define RRF_PIN 9   // Rear Left Foot switch pin
 
 VarSpeedServo servo_flh;  
 VarSpeedServo servo_flf;
@@ -74,7 +74,7 @@ motion_states motion_state = M_STOP;
 
 int leg_timer = 0;
 int leg_timer_fr = 0;
-
+int leg_timer_rl = 0;
 
 // There must be one global SimpleTimer object.
 // More SimpleTimer objects can be created and run.
@@ -82,31 +82,31 @@ SimpleTimer timer;
 
 void setup() 
 { 
-  Serial.begin(9600); 
+  //Serial.begin(9600); 
   
-  servo_flh.attach(FLH_PIN);
-  servo_flf.attach(FLF_PIN);
+  //servo_flh.attach(FLH_PIN);
+  //servo_flf.attach(FLF_PIN);
   servo_frh.attach(FRH_PIN);
   servo_frf.attach(FRF_PIN);
   
   servo_rlh.attach(RLH_PIN);
   servo_rlf.attach(RLF_PIN);
-  servo_rrh.attach(RRH_PIN);
-  servo_rrf.attach(RRF_PIN);
+  //servo_rrh.attach(RRH_PIN);
+  //servo_rrf.attach(RRF_PIN);
   
-  servo_flh.write(FLH_CENTER);
-  servo_flf.write(FLF_CENTER);
-  servo_frh.write(FRH_CENTER);
-  servo_frf.write(FRF_CENTER);
+  //servo_flh.write(FLH_CENTER);
+  //servo_flf.write(FLF_CENTER);
+  //servo_frh.write(FRH_CENTER);
+  //servo_frf.write(FRF_CENTER);
   
-  servo_rlh.write(RLH_CENTER);
-  servo_rlf.write(RLF_CENTER);
-  servo_rrh.write(RRH_CENTER);
-  servo_rrf.write(RRF_CENTER);
+  //servo_rlh.write(RLH_CENTER);
+  //servo_rlf.write(RLF_CENTER);
+  //servo_rrh.write(RRH_CENTER);
+  //servo_rrf.write(RRF_CENTER);
 
  
   motionFwd();
-  
+  //leg_timer = timer.setInterval(6000, motionFwd);
 }
 
 void loop() 
@@ -118,9 +118,30 @@ void loop()
 
 void motionFwd()
 {
+  static byte state;
   
-  leg_timer = timer.setInterval(6000, legFwdFrontRight);
-
+  switch (state) {
+    
+    case 0:
+      legFwdFrontRight();
+      state = 1;
+      leg_timer = timer.setTimeout(3000, motionFwd);
+      break;
+     
+    case 1:
+      legFwdRearLeft();
+      state = 2;
+      leg_timer = timer.setTimeout(3000, motionFwd);
+      break;
+    case 2:
+      legFwdCompleteFrontRight();
+      legFwdCompleteRearLeft();
+      state = 0;
+      leg_timer = timer.setTimeout(3000, motionFwd);
+      break;
+      
+  }
+  
 }
 
 /**
@@ -151,18 +172,56 @@ void legFwdFrontRight()
     case 2:
       // Put foot down
       servo_frf.write(FRF_CENTER, 80);
-      state = 3;
-      // Call this function again later to sweep back
-      leg_timer_fr = timer.setTimeout(1000, legFwdFrontRight);
+      state = 0;
       break;
       
-    case 3:
-      // Sweep back
-      servo_frh.write(FRH_MAX, 20);
+  }
+
+}
+
+void legFwdCompleteFrontRight()
+{
+  // Sweep back
+  servo_frh.write(FRH_MAX, 20);
+}
+
+/**
+ * State machine for perfoming a forward step with the rear left leg.
+ */
+void legFwdRearLeft()
+{
+  static byte state;
+  // On the left side, FRH_MIN is as far back as the leg can be pulled.
+
+  switch (state) {
+    case 0:
+      // Lift foot
+      servo_rlf.write(RLF_MAX, 80);
+      // Call this function again later to sweep forward
+      state = 1;
+      leg_timer_rl = timer.setTimeout(200, legFwdRearLeft);
+      break;
+      
+    case 1:
+      // Sweep forward
+      servo_rlh.write(RLH_MAX, 20);
+      // Call this function again later to put the foot down
+      state = 2;
+      leg_timer_rl = timer.setTimeout(2000, legFwdRearLeft);
+      break;
+      
+    case 2:
+      // Put foot down
+      servo_rlf.write(RLF_CENTER, 80);
       state = 0;
       break;
   }
 
 }
 
+void legFwdCompleteRearLeft()
+{
+  // Sweep back
+  servo_rlh.write(RLH_MIN, 20);
+}
 
