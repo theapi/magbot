@@ -58,6 +58,7 @@
 #include "NewPingLite.h" // Adapted from https://code.google.com/p/arduino-new-ping/
 #include "NewTone.h" // Adapted from https://code.google.com/p/arduino-new-tone/
 
+// https://github.com/shirriff/Arduino-IRremote
 #include <IRremote.h>
 
 // The timer library lets us do things when we want them to happen
