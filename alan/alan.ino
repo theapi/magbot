@@ -41,7 +41,7 @@
  
   timer 0 - Arduino time functions; millis() and motor speed
   timer 1 - Generates the tones for sound AND movement for servos, but not at the same time.
-  timer 2 - @todo available???
+  timer 2 - Remote control IR
   
  PWM (timer) pins we use:
   timer 0 pin 5  - Motor A to control speed.
