@@ -56,13 +56,42 @@ void loop()
   snd.update();
 }
 
+/*
+  SerialEvent occurs whenever a new data comes in the
+ hardware serial RX.  This routine is run between each
+ time loop() runs, so using delay inside loop can delay
+ response.  Multiple bytes of data may be available.
+ */
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read(); 
+    
+    switch(inChar) {
+      case 'a':
+        soundPause();
+        break;
+      case 'b':
+        soundBlock();
+        break;
+      case 'c':
+        soundPower();
+        break;
+      case 'd':
+        soundDamage();
+        break;
+    }
+    
+  }
+}
+
 void soundDemo()
 {
   soundPower();
   timer.setTimeout(2000, soundPause);
   timer.setTimeout(4000, soundBlock);
   timer.setTimeout(6000, soundDamage);
-  timer.setTimeout(8000, soundMelody);
+  //timer.setTimeout(8000, soundMelody);
 }
 
 void soundMelody()
