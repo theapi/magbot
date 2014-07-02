@@ -2,7 +2,7 @@
 Sounds without delay() 
  */
  
-#include <NewTone.h>
+//#include <NewTone.h>
  
 #include "pitches.h"
 
@@ -15,21 +15,26 @@ Sounds without delay()
 const byte sound_pin = 8;
 
 // notes in the melody:
-int melody[] = {
-  NOTE_C4, NOTE_G3,NOTE_G3, NOTE_A3, NOTE_G3,0, NOTE_B3, NOTE_C4};
-
+int melody_notes[] = {NOTE_C4, NOTE_G3,NOTE_G3, NOTE_A3, NOTE_G3,0, NOTE_B3, NOTE_C4};
 // note durations: 4 = quarter note, 8 = eighth note, etc.:
-int noteDurations[] = {
-  4, 8, 8, 4,4,4,4,4 };
+int melody_durations[] = {4, 8, 8, 4,4,4,4,4 };
   
   
-  int notes[] = {
-    NOTE_A3, NOTE_F3, NOTE_A2, 0, NOTE_A3, NOTE_F3, NOTE_A2, 0, NOTE_A3, NOTE_F3, NOTE_A2, 
-  };
+int damage_notes[] = {NOTE_A3, NOTE_F3, NOTE_A2, 0, NOTE_A3, NOTE_F3, NOTE_A2, 0, NOTE_A3, NOTE_F3, NOTE_A2, };
+int damage_durations[] = {8, 8, 8, 12, 8, 8, 8, 12, 8, 8, 8, };
   
-  int durations[] = {
-    8, 8, 8, 12, 8, 8, 8, 12, 8, 8, 8, 
-  };
+int pause_notes[] = {NOTE_E6, NOTE_C6, NOTE_E6, NOTE_C6 };
+int pause_durations[] = {8, 8, 8, 8, };
+
+int block_notes[] = {NOTE_G4, NOTE_GS4, NOTE_A4, NOTE_AS4, NOTE_B4};
+int block_durations[] = {8, 8, 8, 8, 8};
+
+int power_notes[] = {
+NOTE_D5, NOTE_F5, NOTE_A5, 
+NOTE_E5, NOTE_G5, NOTE_B5, 
+NOTE_F5, NOTE_A5, NOTE_C6 };
+//int power_durations[] = {8, 8, 8, 8, 8, 8, 8, 8, 8};
+int power_durations[] = {12, 12, 12, 12, 12, 12, 12, 12, 12};
   
 // The global SimpleTimer object, to use instead of delays.
 SimpleTimer timer;
@@ -42,7 +47,7 @@ void setup()
   Serial.begin(9600);
   
   
-  timer.setTimeout(500, soundMelody);
+  timer.setTimeout(250, soundDemo);
 }
 
 void loop() 
@@ -51,15 +56,43 @@ void loop()
   snd.update();
 }
 
+void soundDemo()
+{
+  soundPower();
+  timer.setTimeout(2000, soundPause);
+  timer.setTimeout(4000, soundBlock);
+  timer.setTimeout(6000, soundDamage);
+  timer.setTimeout(8000, soundMelody);
+}
+
 void soundMelody()
 {
-  int length = sizeof(melody) / sizeof(int);
-  snd.playMelody(length, melody, noteDurations);
+  int length = sizeof(melody_notes) / sizeof(int);
+  snd.playNotes(length, melody_notes, melody_durations);
 }
 
 void soundDamage()
 {
-  int length = sizeof(notes) / sizeof(int);
-  snd.playMelody(length, notes, durations);
+  int length = sizeof(damage_notes) / sizeof(int);
+  snd.playNotes(length, damage_notes, damage_durations);
 }
+
+void soundPause()
+{
+  int length = sizeof(pause_notes) / sizeof(int);
+  snd.playNotes(length, pause_notes, pause_durations);
+}
+
+void soundBlock()
+{
+  int length = sizeof(block_notes) / sizeof(int);
+  snd.playNotes(length, block_notes, block_durations);
+}
+
+void soundPower()
+{
+  int length = sizeof(power_notes) / sizeof(int);
+  snd.playNotes(length, power_notes, power_durations);
+}
+
 

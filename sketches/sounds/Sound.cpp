@@ -71,8 +71,6 @@ void Sound::playNote()
   
   // @todo: remove hard coding to the 8 note melody
   if (_current_note > this->_length) {
-    noNewTone(_pin);
-    Serial.println("DONE");
     // Nothing left to play
     this->disable();
     return;
@@ -95,7 +93,7 @@ void Sound::playNote()
 
 }
 
-void Sound::playMelody(int length, int melody[], int noteDurations[]) 
+void Sound::playNotes(int length, int melody[], int noteDurations[]) 
 {
   this->_melody = melody;
   this->_noteDurations = noteDurations;

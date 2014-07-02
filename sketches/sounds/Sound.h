@@ -5,17 +5,16 @@
 #define Sound_h
 
 #include "Arduino.h"
-#include "NewTone.h"
+//#include "NewTone.h"
 #include "SimpleTimer.h"
 
 class Sound
 {
   public:
     Sound(int pin);
-    //void nextNote();
     void stopNote();
     void playNote();
-    void playMelody(int length, int melody[], int noteDurations[]);
+    void playNotes(int length, int melody[], int noteDurations[]);
     void update();
     void enable();
     void disable();
