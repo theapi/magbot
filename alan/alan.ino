@@ -56,7 +56,8 @@
 #include <util/delay.h>
 
 #include "NewPingLite.h" // Adapted from https://code.google.com/p/arduino-new-ping/
-#include "NewTone.h" // Adapted from https://code.google.com/p/arduino-new-tone/
+#include <NewTone.h>
+
 
 // https://github.com/shirriff/Arduino-IRremote
 #include <IRremote.h>
@@ -64,7 +65,6 @@
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
-#include <Servo.h>
 #include "Sound.h"
 
 
@@ -154,8 +154,6 @@ SimpleTimer timer;
 // Create the sound playing object.
 Sound snd(sound_pin);
 
-//ServoTimer2 servo;
-Servo servo_pinger;
 
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see debugging messages.
@@ -299,13 +297,9 @@ void pingMeasure()
       
       // Don't hit the obstacle.
       motionStop();
-      
-      // Make sure it's safe to play sounds
-      servoDetachAll();
 
       // play sound
       playMelody();
-
 
       actionPingSearch();
 
@@ -692,28 +686,4 @@ void irHandleInput(unsigned long code){
 Experimental functions
 ********************************************************************************/
 
-void servoMove() 
-{
-  Serial.println("experimental_servoMove");
-  
-  
-  // Can't move servo & motor at the same time.
-  //action_stop();
- 
-  servo_pinger.attach(6);
-  servo_pinger.write(random(1100, 1800));
-  timer.setTimeout(500, servoDetach);
-}
-
-void servoDetach()
-{
-  servo_pinger.detach(); 
-  //EXPERIMENTAL!!
-  actionTrundle();
-}
-
-void servoDetachAll()
-{
-  servo_pinger.detach();
-}
 

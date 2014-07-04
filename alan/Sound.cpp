@@ -55,7 +55,7 @@ void Sound::update()
 void Sound::stopNote()
 {
   // stop the tone playing:
-  noNewToneB(_pin);
+  noNewTone(_pin);
   // play the next one if there is one
   playNote();
 }
@@ -79,7 +79,7 @@ void Sound::playNote()
   int dur = _noteDurations[_current_note];
   int noteDuration = 1000/dur;
   this->_playing = 1;
-  NewToneB(_pin, _melody[_current_note], noteDuration);
+  NewTone(_pin, _melody[_current_note], noteDuration);
   
   // to distinguish the notes, set a minimum time between them.
   // the note's duration + 30% seems to work well:
