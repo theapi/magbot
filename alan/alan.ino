@@ -204,8 +204,13 @@ void setup() {
   digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
+  // Set a timer just to fill the timer slot that does not work.
+  timer.setTimeout(10, batteryLevel); // @todo fix dead first timer.
+  
+  // Let everyone know we're alive!
   timer.setTimeout(500, soundPause);
   
+  // Check the batteries every so often.
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
@@ -213,7 +218,7 @@ void setup() {
   
   
   actionStop();
-  batteryLevel();
+  //batteryLevel();
   whiskersCalibrate();
 
 }
@@ -246,12 +251,12 @@ void batteryLevel()
 {
   // Check battery level
   long vcc = readVcc();
-  byte batt = map(vcc - 3000, 0, 2000, 0, 255);
+  //byte batt = map(vcc - 3000, 0, 2000, 0, 255);
   //analogWrite(battery_led, batt);
   Serial.print("Battery: ");
-  Serial.print(vcc);
-  Serial.print(" : ");
-  Serial.println(batt);
+  Serial.println(vcc);
+  //Serial.print(" : ");
+  //Serial.println(batt);
 }
 
 
@@ -1087,8 +1092,8 @@ void irHandleInput(unsigned long code)
     strcpy (CodeName, "??");
     break;
   }
-  
- Serial.println(CodeName);
+
+  //Serial.println(CodeName);
 }
 
 /********************************************************************************
