@@ -477,7 +477,6 @@ void actionStop()
   Serial.println("STOP!");
   action_state = A_STOPPED;
   motionStop();
-  actionTimeoutDone();
   pingStop();
   whiskersStop();
 }
@@ -569,28 +568,32 @@ void actionDance2StateMachine(byte motion_state)
  */
 void actionHappy()
 {
-  timer.setTimeout(2000, actionStop);
   if (action_state != A_HAPPY) {
-    actionStop();
     Serial.println("Happy");
     
     // Set the state, so the action can be handled by the state machine.
     action_state = A_HAPPY;
+    
+    actionTimeoutStart(random(500,700));
+    motionRotateLeft(255);
   }
 }
 
 void actionHappyStateMachine(byte motion_state)
 {
- 
+  static byte count = 0;
+  
+  // Loop through left & right a few times.
+  if (count > 3) {
+    count = 0;
+    actionStop(); 
+  }
+  
   switch (motion_state) {
-    case M_STOP:
-      // Spin left for random amount of time
-      actionTimeoutStart(random(500,700));
-      motionRotateLeft(255);    
-      break;
-      
+
     case M_ROTATE_LEFT:
       if (action_done) {
+        count++;
         // Spin right for random amount of time
         actionTimeoutStart(random(500,700));
         motionRotateRight(255); 
@@ -599,6 +602,7 @@ void actionHappyStateMachine(byte motion_state)
                
     case M_ROTATE_RIGHT:
       if (action_done) {
+        count++;
         // Spin left for random amount of time
         actionTimeoutStart(random(500,700));
         motionRotateLeft(255);
@@ -608,6 +612,7 @@ void actionHappyStateMachine(byte motion_state)
     default:
       break;
   } 
+  
 }
 
 /**
@@ -882,7 +887,16 @@ IR remote functions
 ********************************************************************************/
 
 /* Function returns the button name relating to the received code */
-void irHandleInput(unsigned long code){
+void irHandleInput(unsigned long code)
+{
+  // Debounce the remote buttons.
+  static unsigned long last_millis;
+  unsigned long now = millis();
+  if (now - last_millis < 200) {
+    return;
+  }
+  last_millis = now;
+  
   /* Character array used to hold the received button name */
   char CodeName[3];
   /* Is the received code is a repeat code (NEC protocol) */
@@ -920,8 +934,13 @@ void irHandleInput(unsigned long code){
     /* Received code is for the  PLAY/PAUSE button */
   case 0xFFC23D:
     strcpy (CodeName, "PL");
-    soundPower();
-    actionTrundle();
+    if (action_state == A_STOPPED) {
+      soundPower();
+      actionTrundle();
+    } else {
+      soundPause();
+      actionStop(); 
+    }
     break;
     /* Received code is for the EQ button */
   case 0xFFE01F:
