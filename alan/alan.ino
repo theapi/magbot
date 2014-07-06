@@ -76,16 +76,17 @@
 
 
 #define MOTOR_SPEED_MIN_A 200
-#define MOTOR_SPEED_MAX_A 230 // This motor is slower on my setup.
+#define MOTOR_SPEED_MAX_A 255 
 #define MOTOR_SPEED_MIN_B 200
-#define MOTOR_SPEED_MAX_B 255
+#define MOTOR_SPEED_MAX_B 235 // This motor is slower on my setup.
 
-// Motor attached to channel A:
+
+// Right Motor attached to channel A:
 const byte motorA_direction = 12;
 const byte motorA_pwm = 5; // Re-wired from the shield's default of 3
 const byte motorA_brake = 9;
 const byte motorA_sensor = A0;
-// Motor attached to channel B:
+// Left Motor attached to channel B:
 const byte motorB_direction = 13;
 const byte motorB_pwm = 6; // Re-wired from the shield's default of 11
 const byte motorB_brake = 8;
@@ -101,7 +102,9 @@ int ping_timer = 0; // Stores the timer used for the ping sonar.
 
 // Whiskers setup
 const byte whiskers_horiz = A5; // The analog input pin
-int whiskers_horiz_default = 512; // Assume half of full analoge read.
+int whiskers_horiz_default = 512; // Assume half of full analogRead.
+const byte whiskers_vert = A4; // The analog input pin
+int whiskers_vert_default = 512; // Assume half of full analogRead.
 const byte whiskers_delay = 100; // How often to check the whiskers (milliseconds).
 const byte whiskers_threshold = 5; // How much the whiskers reading is allowed to fluctuate.
 int whiskers_timer = 0; // Stores the timer used for the whiskers.
@@ -163,12 +166,11 @@ enum action_states {
   A_DANCE2,
   A_BORED,
   A_HAPPY,
-  A_CALIBRATION
 };
 // The curent action state.
 action_states action_state = A_STOPPED;
 int timer_action = 0;
-byte action_done = 0; // mnmm needs explaining
+byte action_done = 0; // Set when the requested amount of action time is finished.
 
 // There must be one global SimpleTimer object.
 // More SimpleTimer objects can be created and run,
@@ -348,21 +350,8 @@ Action functions
  */
 void actionRun()
 {
-  /*
-  Serial.print("action_run ");
-  Serial.print(action_state);
-  Serial.print(" - ");
-  Serial.println(motion_state);
-  */
-  
+
   switch (action_state) {
-    case A_STOPPED:
-    
-      break;
-    
-    case A_TRUNDLE:
-    
-      break;
       
     case A_WHISKERSEARCH_LEFT:
     case A_PINGSEARCH:
@@ -370,18 +359,16 @@ void actionRun()
         case M_STOP:
            // reverse for 1 second
            actionTimeoutStart(1000);
-           motionRev(); 
+           motionRev(200); 
            Serial.println("REVERSE");    
           break;
           
         case M_REV:
           if (action_done) {
-            long randNumber = random(400, 600);
-            //Serial.println(randNumber);
             // Rotate for a random amount of time.
-            actionTimeoutStart(randNumber);
+            actionTimeoutStart(random(600, 900));
             Serial.println("ROTATE LEFT");
-            motionRotateLeft(); 
+            motionRotateLeft(200); 
           }
           break;
           
@@ -393,28 +380,27 @@ void actionRun()
           }
           break;
           
-        case M_ROTATE_RIGHT:
+        default:
           break;
       }
-      break;
+      break; // End A_PINGSEARCH / A_WHISKERSEARCH_LEFT
       
     case A_WHISKERSEARCH_RIGHT:
         switch (motion_state) {
         case M_STOP:
            // reverse for 1 second
            actionTimeoutStart(1000);
-           motionRev(); 
+           motionRev(200); 
            Serial.println("REVERSE");    
           break;
           
         case M_REV:
           if (action_done) {
-            long randNumber = random(400, 600);
             //Serial.println(randNumber);
             // Rotate for a random amount of time.
-            actionTimeoutStart(randNumber);
+            actionTimeoutStart(random(600, 900));
             Serial.println("ROTATE RIGHT");
-            motionRotateRight(); 
+            motionRotateRight(200); 
           }
           break;
           
@@ -426,35 +412,72 @@ void actionRun()
           }
           break;
 
+        default:
+          break;
       }
-      break;
+      break; // End A_WHISKERSEARCH_RIGHT
       
     case A_DANCE1:
-    
-      break;
+      switch (motion_state) {
+        case M_STOP:
+           // spin left for 3 seconds
+           actionTimeoutStart(3000);
+           motionRotateLeft(255);    
+          break;
+                    
+        case M_ROTATE_LEFT:
+          if (action_done) {
+            // Go forward a random amount
+            actionTimeoutStart(random(300,600));
+            motionFwd(250);
+          }
+          break;
+          
+        case M_FWD:
+          if (action_done) {
+            // Go Back a random amount
+            actionTimeoutStart(random(300,600));
+            motionRev(250);
+          }
+          break;
+          
+        case M_REV:
+          if (action_done) {
+            Serial.println("DANCE1 DONE");
+            // Trundle away
+            actionTrundle();
+          }
+          break;
+          
+        default:
+          break;
+      }
+      break; // End A_DANCE1
+      
       
     case A_DANCE2:
-    
-      break;
+      actionDance2StateMachine(motion_state);
+      break; // End A_DANCE2
       
     case A_BORED:
-    
       break;
       
     case A_HAPPY:
-    
+      actionHappyStateMachine(motion_state);
       break;
       
-    case A_CALIBRATION:
-    
+    default:
       break;
+
   }
 }
 
 void actionStop()
 {
+  Serial.println("STOP!");
   action_state = A_STOPPED;
   motionStop();
+  actionTimeoutDone();
   pingStop();
   whiskersStop();
 }
@@ -475,8 +498,116 @@ void actionTrundle()
     // Start feeling
     whiskersStart();
   
-    motionFwd();
+    motionFwd(250);
   }
+}
+
+/**
+ * Do a dance
+ */
+void actionDance1()
+{
+  if (action_state != A_DANCE1) {
+    actionStop();
+    Serial.println("Dance 1");
+
+    // Set the state, so the action can be handled by the state machine.
+    action_state = A_DANCE1;
+    
+    // Start pinging
+    pingStart();
+      
+    // Start feeling
+    whiskersStart();
+  }
+}
+
+/**
+ * Do another dance
+ */
+void actionDance2()
+{
+  if (action_state != A_DANCE2) {
+    actionStop();
+    Serial.println("Dance 2");
+    
+    // Set the state, so the action can be handled by the state machine.
+    action_state = A_DANCE2;
+    
+    // Start pinging
+    pingStart();
+      
+    // Start feeling
+    whiskersStart();
+  }
+}
+
+void actionDance2StateMachine(byte motion_state)
+{
+   switch (motion_state) {
+    case M_STOP:
+      // Spin right for random amount of time
+      actionTimeoutStart(random(2000,5000));
+      motionRotateRight(255);    
+      break;
+               
+    case M_ROTATE_RIGHT:
+      if (action_done) {
+        Serial.println("DANCE2 DONE");
+        // Trundle away
+        actionTrundle();
+      }
+      break;
+
+    default:
+      break;
+  } 
+}
+
+/**
+ * Happy
+ */
+void actionHappy()
+{
+  timer.setTimeout(2000, actionStop);
+  if (action_state != A_HAPPY) {
+    actionStop();
+    Serial.println("Happy");
+    
+    // Set the state, so the action can be handled by the state machine.
+    action_state = A_HAPPY;
+  }
+}
+
+void actionHappyStateMachine(byte motion_state)
+{
+ 
+  switch (motion_state) {
+    case M_STOP:
+      // Spin left for random amount of time
+      actionTimeoutStart(random(500,700));
+      motionRotateLeft(255);    
+      break;
+      
+    case M_ROTATE_LEFT:
+      if (action_done) {
+        // Spin right for random amount of time
+        actionTimeoutStart(random(500,700));
+        motionRotateRight(255); 
+      }   
+      break;
+               
+    case M_ROTATE_RIGHT:
+      if (action_done) {
+        // Spin left for random amount of time
+        actionTimeoutStart(random(500,700));
+        motionRotateLeft(255);
+      }
+      break;
+
+    default:
+      break;
+  } 
 }
 
 /**
@@ -485,7 +616,7 @@ void actionTrundle()
 void actionPingSearch()
 {
   Serial.println("SEARCHING");
-  // Set the state, so the action can be handeled by the state machine.
+  // Set the state, so the action can be handled by the state machine.
   action_state = A_PINGSEARCH;
 }
 
@@ -495,7 +626,7 @@ void actionPingSearch()
 void actionWhiskerSearchLeft()
 {
   Serial.println("WHISKERSEARCH LEFT");
-  // Set the state, so the action can be handeled by the state machine.
+  // Set the state, so the action can be handled by the state machine.
   action_state = A_WHISKERSEARCH_LEFT;
 }
 
@@ -505,7 +636,7 @@ void actionWhiskerSearchLeft()
 void actionWhiskerSearchRight()
 {
   Serial.println("WHISKERSEARCH RIGHT");
-  // Set the state, so the action can be handeled by the state machine.
+  // Set the state, so the action can be handled by the state machine.
   action_state = A_WHISKERSEARCH_RIGHT;
 }
 
@@ -529,56 +660,98 @@ Motion functions
 
 void motionStop()
 {
-  
     analogWrite(motorA_pwm, 0); // Channel A at max speed 
     analogWrite(motorB_pwm, 0); // Channel B at max speed 
     motion_state = M_STOP;
   
 }
 
-void motionFwd()
+void motionFwd(byte speed)
 {
-//@todo: set speed
+  byte speed_a = motionSpeedCompensateA(speed);
+  byte speed_b = motionSpeedCompensateB(speed);
+  
+  Serial.println("FORWARD");
   digitalWrite(motorA_direction, HIGH); // Channel A forward
   digitalWrite(motorB_direction, HIGH); // Channel B forward
-  analogWrite(motorA_pwm, MOTOR_SPEED_MAX_A); // Channel A at max speed 
-  analogWrite(motorB_pwm, MOTOR_SPEED_MAX_B); // Channel B at max speed 
+  analogWrite(motorA_pwm, speed_a); // Channel A at max speed 
+  analogWrite(motorB_pwm, speed_b); // Channel B at max speed 
   motion_state = M_FWD;
 }
 
-void motionRev()
+void motionRev(byte speed)
 {
-
-    digitalWrite(motorA_direction, LOW); // Channel A backward
-    digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, MOTOR_SPEED_MIN_A); // Channel A at minimum speed 
-    analogWrite(motorB_pwm, MOTOR_SPEED_MIN_B); // Channel B at minimum speed   
-    motion_state = M_REV; 
+  byte speed_a = motionSpeedCompensateA(speed);
+  byte speed_b = motionSpeedCompensateB(speed);
+  
+  Serial.println("REVERSE");
+  digitalWrite(motorA_direction, LOW); // Channel A backward
+  digitalWrite(motorB_direction, LOW); // Channel B backward
+  analogWrite(motorA_pwm, speed_a); // Channel A at minimum speed 
+  analogWrite(motorB_pwm, speed_b); // Channel B at minimum speed   
+  motion_state = M_REV; 
   
 }
 
-void motionRotateLeft()
+void motionRotateLeft(byte speed)
 {
+  byte speed_a = motionSpeedCompensateA(speed);
+  byte speed_b = motionSpeedCompensateB(speed);
   
-    Serial.println("LEFT");
-    digitalWrite(motorA_direction, HIGH); // Channel A forward
-    digitalWrite(motorB_direction, LOW); // Channel B backward
-    analogWrite(motorA_pwm, MOTOR_SPEED_MIN_A);
-    analogWrite(motorB_pwm, MOTOR_SPEED_MIN_B);   
-    motion_state = M_ROTATE_LEFT; 
+  Serial.println("LEFT");
+  digitalWrite(motorA_direction, HIGH); // Channel A forward
+  digitalWrite(motorB_direction, LOW); // Channel B backward
+  analogWrite(motorA_pwm, speed_a);
+  analogWrite(motorB_pwm, speed_b);   
+  motion_state = M_ROTATE_LEFT; 
+}
+
+void motionRotateRight(byte speed)
+{
+  byte speed_a = motionSpeedCompensateA(speed);
+  byte speed_b = motionSpeedCompensateB(speed);
+  
+  Serial.println("RIGHT");
+  digitalWrite(motorA_direction, LOW); // Channel A backward
+  digitalWrite(motorB_direction, HIGH); // Channel B forward
+  analogWrite(motorA_pwm, speed_a);
+  analogWrite(motorB_pwm, speed_b);   
+  motion_state = M_ROTATE_RIGHT; 
   
 }
 
-void motionRotateRight()
+byte motionSpeedCompensateA(byte speed)
 {
   
-    Serial.println("RIGHT");
-    digitalWrite(motorA_direction, LOW); // Channel A backward
-    digitalWrite(motorB_direction, HIGH); // Channel B forward
-    analogWrite(motorA_pwm, MOTOR_SPEED_MIN_A);
-    analogWrite(motorB_pwm, MOTOR_SPEED_MIN_B);   
-    motion_state = M_ROTATE_RIGHT; 
+  if (MOTOR_SPEED_MAX_B > MOTOR_SPEED_MAX_A) {
+    // Need to slow down this motor
+    speed = speed - (MOTOR_SPEED_MAX_B - MOTOR_SPEED_MAX_A);
+  }
+
+  if (speed < MOTOR_SPEED_MIN_A) {
+    speed = MOTOR_SPEED_MIN_A;
+  } else if (speed > MOTOR_SPEED_MAX_A) {
+    speed = MOTOR_SPEED_MAX_A;
+  }
   
+  return speed;
+}
+
+byte motionSpeedCompensateB(byte speed)
+{
+  
+  if (MOTOR_SPEED_MAX_A > MOTOR_SPEED_MAX_B) {
+    // Need to slow down this motor
+    speed = speed - (MOTOR_SPEED_MAX_A - MOTOR_SPEED_MAX_B);
+  }
+
+  if (speed < MOTOR_SPEED_MIN_B) {
+    speed = MOTOR_SPEED_MIN_B;
+  } else if (speed > MOTOR_SPEED_MAX_B) {
+    speed = MOTOR_SPEED_MAX_B;
+  }
+  
+  return speed;
 }
 
 /********************************************************************************
@@ -610,34 +783,56 @@ void whiskersStop()
 
 void whiskersCheck()
 {
-  int val = analogRead(whiskers_horiz);
   
-  //Serial.print("whisker read: ");
-  //Serial.println(val);
+  if (action_state == A_PINGSEARCH 
+    || action_state == A_WHISKERSEARCH_LEFT 
+    || action_state == A_WHISKERSEARCH_RIGHT) {
+    // Doing a search already, so don't interfere with a whiskers bump.
+    return;
+  }
+  
   
   // If the reading of the thumbstick is not the same as when calibrated,
-  // we've hit something.
-  if (action_state == A_PINGSEARCH || action_state == A_WHISKERSEARCH_LEFT || action_state == A_WHISKERSEARCH_RIGHT) {
-    
-    // Doing a search already, so don't interfere with a whiskers bump. 
-    
-  } else if (val > whiskers_horiz_default + whiskers_threshold) {
-    Serial.println(whiskers_horiz_default);
-    Serial.println("BUMP LEFT!");
-    // Don't hit the obstacle.
-    motionStop();
-    soundDamage();
-      
-    actionWhiskerSearchLeft();
+    // we've hit something.
   
-  } else if (val < whiskers_horiz_default - whiskers_threshold) {
-    Serial.println(whiskers_horiz_default);
-    Serial.println("BUMP RIGHT!");
+  // Vertical check
+  int val = analogRead(whiskers_vert);
+  if (val > whiskers_horiz_default + whiskers_threshold || val < whiskers_vert_default - whiskers_threshold) {
+    Serial.println(whiskers_vert_default);
+    Serial.println("BUMP VERTICLE!");
     // Don't hit the obstacle.
     motionStop();
     soundDamage();
       
     actionWhiskerSearchRight();
+    
+  } else {
+  
+    // Horizontal check
+    int val = analogRead(whiskers_horiz);
+    
+    //Serial.print("whisker read: ");
+    //Serial.println(val);
+    
+    
+    if (val > whiskers_horiz_default + whiskers_threshold) {
+      Serial.println(whiskers_horiz_default);
+      Serial.println("BUMP LEFT!");
+      // Don't hit the obstacle.
+      motionStop();
+      soundDamage();
+        
+      actionWhiskerSearchRight();
+    
+    } else if (val < whiskers_horiz_default - whiskers_threshold) {
+      Serial.println(whiskers_horiz_default);
+      Serial.println("BUMP RIGHT!");
+      // Don't hit the obstacle.
+      motionStop();
+      soundDamage();
+        
+      actionWhiskerSearchLeft();
+    } 
   }
 
 }
@@ -760,14 +955,17 @@ void irHandleInput(unsigned long code){
     /* Received code is for the number 2 button */
   case 0xFF18E7:
     strcpy (CodeName, "2");
+    actionDance1();
     break;
     /* Received code is for the number 3 button */
   case 0xFF7A85:
     strcpy (CodeName, "3");
+    actionDance2();
     break;
     /* Received code is for the number 4 button */
   case 0xFF10EF:
     strcpy (CodeName, "4");
+    actionHappy();
     break;
     /* Received code is for the number 5 button */
   case 0xFF38C7:
