@@ -65,7 +65,10 @@
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
+
+#include "SoundPitches.h"
 #include "Sound.h"
+
 
 
 // Define the DIO pin used for the receiver 
@@ -99,7 +102,8 @@ int ping_timer = 0; // Stores the timer used for the ping sonar.
 // Whiskers setup
 const byte whiskers_horiz = A5; // The analog input pin
 int whiskers_horiz_default = 512; // Assume half of full analoge read.
-const byte whiskers_delay = 200; // How often to check the whiskers (milliseconds).
+const byte whiskers_delay = 100; // How often to check the whiskers (milliseconds).
+const byte whiskers_threshold = 5; // How much the whiskers reading is allowed to fluctuate.
 int whiskers_timer = 0; // Stores the timer used for the whiskers.
 
 // Battery configuration
@@ -107,10 +111,28 @@ unsigned long battery_delay = 15000; // Number of milliseconds to wait before ne
 
 // Sound configuration
 const byte sound_pin = 2;
-// Melody (liberated from the toneMelody Arduino example sketch by Tom Igoe).
-int melody[] = { 262, 196, 196, 220, 196, 0, 247, 262 };
-int noteDurations[] = { 4, 8, 8, 4, 4, 4, 4, 4 };
-unsigned long melody_delay = 10000; // Number of milliseconds to wait before next melody
+// notes in the melody:
+int melody_notes[] = {NOTE_C4, NOTE_G3,NOTE_G3, NOTE_A3, NOTE_G3,0, NOTE_B3, NOTE_C4};
+// note durations: 4 = quarter note, 8 = eighth note, etc.:
+int melody_durations[] = {4, 8, 8, 4,4,4,4,4 };
+  
+  
+int damage_notes[] = {NOTE_A3, NOTE_F3, NOTE_A2, 0, NOTE_A3, NOTE_F3, NOTE_A2, 0, NOTE_A3, NOTE_F3, NOTE_A2, };
+int damage_durations[] = {8, 8, 8, 12, 8, 8, 8, 12, 8, 8, 8, };
+  
+int pause_notes[] = {NOTE_E6, NOTE_C6, NOTE_E6, NOTE_C6 };
+int pause_durations[] = {8, 8, 8, 8, };
+
+int block_notes[] = {NOTE_G4, NOTE_GS4, NOTE_A4, NOTE_AS4, NOTE_B4};
+int block_durations[] = {8, 8, 8, 8, 8};
+
+int power_notes[] = {
+NOTE_D5, NOTE_F5, NOTE_A5, 
+NOTE_E5, NOTE_G5, NOTE_B5, 
+NOTE_F5, NOTE_A5, NOTE_C6 };
+//int power_durations[] = {8, 8, 8, 8, 8, 8, 8, 8, 8};
+int power_durations[] = {12, 12, 12, 12, 12, 12, 12, 12, 12};
+
 
 /* Structure containing received data */
 decode_results results;/* Used to store the last code received. Used when a repeat code is received */
@@ -182,6 +204,8 @@ void setup() {
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
   
+  timer.setTimeout(500, soundPause);
+  
   actionStop();
   batteryLevel();
   whiskersCalibrate();
@@ -208,6 +232,10 @@ void loop()
   snd.update();
 }
 
+/********************************************************************************
+Battery functions
+********************************************************************************/
+
 void batteryLevel()
 {
   // Check battery level
@@ -220,10 +248,6 @@ void batteryLevel()
   Serial.println(batt);
 }
 
-void playMelody() 
-{
-  snd.playMelody(melody, noteDurations);
-}
 
 /**
  * Read the internal voltage.
@@ -299,7 +323,7 @@ void pingMeasure()
       motionStop();
 
       // play sound
-      playMelody();
+      soundBlock();
 
       actionPingSearch();
 
@@ -555,16 +579,57 @@ void whiskersCheck()
     
     // Doing a ping search already, so don't interfere with a whiskers bump. 
     
-  } else if ( (val > whiskers_horiz_default + 30) || (val < whiskers_horiz_default - 30) ) {
+  } else if ( (val > whiskers_horiz_default + whiskers_threshold) || (val < whiskers_horiz_default - whiskers_threshold) ) {
     Serial.println(whiskers_horiz_default);
        Serial.println("BUMP!");
       
       // Don't hit the obstacle.
       motionStop();
       
+      soundDamage();
+      
       actionPingSearch();
   }
   
+}
+
+/********************************************************************************
+Sound functions
+********************************************************************************/
+
+void soundMelody()
+{
+  Serial.println("Sound: melody");
+  int length = sizeof(melody_notes) / sizeof(int);
+  snd.playNotes(length, melody_notes, melody_durations);
+}
+
+void soundDamage()
+{
+  Serial.println("Sound: damage");
+  int length = sizeof(damage_notes) / sizeof(int);
+  snd.playNotes(length, damage_notes, damage_durations);
+}
+
+void soundPause()
+{
+  Serial.println("Sound: pause");
+  int length = sizeof(pause_notes) / sizeof(int);
+  snd.playNotes(length, pause_notes, pause_durations);
+}
+
+void soundBlock()
+{
+  Serial.println("Sound: block");
+  int length = sizeof(block_notes) / sizeof(int);
+  snd.playNotes(length, block_notes, block_durations);
+}
+
+void soundPower()
+{
+  Serial.println("Sound: power");
+  int length = sizeof(power_notes) / sizeof(int);
+  snd.playNotes(length, power_notes, power_durations);
 }
 
 
@@ -600,17 +665,18 @@ void irHandleInput(unsigned long code){
   case 0xFFE21D:
     strcpy (CodeName, "MU");
     break;
-    /* Received code is for the PLAY/PAUSE button */
+    /* Received code is for the REWIND button */
   case 0xFF22DD:
     strcpy (CodeName, "RW");
     break;
-    /* Received code is for the REWIND button */
+    /* Received code is for the FAST FORWARD button */
   case 0xFF02FD:
     strcpy (CodeName, "FW");
     break;
-    /* Received code is for the FAST FORWARD button */
+    /* Received code is for the  PLAY/PAUSE button */
   case 0xFFC23D:
     strcpy (CodeName, "PL");
+    soundPower();
     actionTrundle();
     break;
     /* Received code is for the EQ button */

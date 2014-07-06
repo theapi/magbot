@@ -70,7 +70,7 @@ void Sound::playNote()
   }
   
   // @todo: remove hard coding to the 8 note melody
-  if (_current_note > 8) {
+  if (_current_note > this->_length) {
     // Nothing left to play
     this->disable();
     return;
@@ -84,19 +84,23 @@ void Sound::playNote()
   // to distinguish the notes, set a minimum time between them.
   // the note's duration + 30% seems to work well:
   int pauseBetweenNotes = noteDuration * 1.30;
-  Serial.print(_melody[_current_note]); 
-  Serial.print(" : ");
-  Serial.println(pauseBetweenNotes);
+  //Serial.print(_melody[_current_note]); 
+  //Serial.print(" : ");
+  //Serial.println(pauseBetweenNotes);
   
   ++_current_note;
   _timer.setTimeout(pauseBetweenNotes, sound_caller::stopNote);
 
 }
 
-void Sound::playMelody(int melody[], int noteDurations[]) 
+void Sound::playNotes(int length, int melody[], int noteDurations[]) 
 {
   this->_melody = melody;
   this->_noteDurations = noteDurations;
+  //this->_size = sizeof(melody) / sizeof(int);
+
+  
+  this->_length = length;
   this->enable();
   _current_note = 0;
   playNote();

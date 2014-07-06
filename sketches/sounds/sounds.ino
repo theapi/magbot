@@ -4,15 +4,16 @@ Sounds without delay()
  
 //#include <NewTone.h>
  
-#include "pitches.h"
+
 
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.
 #include "SimpleTimer.h"
 
+#include "SoundPitches.h"
 #include "Sound.h"
 
-const byte sound_pin = 8;
+const byte sound_pin = 2;
 
 // notes in the melody:
 int melody_notes[] = {NOTE_C4, NOTE_G3,NOTE_G3, NOTE_A3, NOTE_G3,0, NOTE_B3, NOTE_C4};
