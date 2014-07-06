@@ -157,6 +157,8 @@ enum action_states {
   A_STOPPED,
   A_TRUNDLE, 
   A_PINGSEARCH,
+  A_WHISKERSEARCH_LEFT,
+  A_WHISKERSEARCH_RIGHT,
   A_DANCE1,
   A_DANCE2,
   A_BORED,
@@ -362,30 +364,56 @@ void actionRun()
     
       break;
       
+    case A_WHISKERSEARCH_LEFT:
     case A_PINGSEARCH:
       switch (motion_state) {
         case M_STOP:
            // reverse for 1 second
            actionTimeoutStart(1000);
            motionRev(); 
-           Serial.println("SEARCH REVERSE");    
+           Serial.println("REVERSE");    
           break;
           
         case M_REV:
           if (action_done) {
-            Serial.println("SEARCH LEFT");
-            // Start pinging
-            pingStart();
-          
-            actionTimeoutStart(500); //@todo not fake the search!
+            long randNumber = random(400, 600);
+            //Serial.println(randNumber);
+            // Rotate for a random amount of time.
+            actionTimeoutStart(randNumber);
+            Serial.println("ROTATE LEFT");
             motionRotateLeft(); 
           }
           break;
           
         case M_ROTATE_LEFT:
           if (action_done) {
-            Serial.println("SEARCH RIGHT");
-            actionTimeoutStart(2000); //@todo not fake the search!
+            Serial.println("SEARCH DONE");
+            // Trundle away
+            actionTrundle();
+          }
+          break;
+          
+        case M_ROTATE_RIGHT:
+          break;
+      }
+      break;
+      
+    case A_WHISKERSEARCH_RIGHT:
+        switch (motion_state) {
+        case M_STOP:
+           // reverse for 1 second
+           actionTimeoutStart(1000);
+           motionRev(); 
+           Serial.println("REVERSE");    
+          break;
+          
+        case M_REV:
+          if (action_done) {
+            long randNumber = random(400, 600);
+            //Serial.println(randNumber);
+            // Rotate for a random amount of time.
+            actionTimeoutStart(randNumber);
+            Serial.println("ROTATE RIGHT");
             motionRotateRight(); 
           }
           break;
@@ -393,17 +421,11 @@ void actionRun()
         case M_ROTATE_RIGHT:
           if (action_done) {
             Serial.println("SEARCH DONE");
-            // Done the sweep, stop.
-            actionStop(); 
-            
-            // Stop pinging
-            pingStop(); 
-            
-            
             // Trundle away
             actionTrundle();
           }
           break;
+
       }
       break;
       
@@ -465,6 +487,26 @@ void actionPingSearch()
   Serial.println("SEARCHING");
   // Set the state, so the action can be handeled by the state machine.
   action_state = A_PINGSEARCH;
+}
+
+/**
+ * Look for somewhare to go.
+ */
+void actionWhiskerSearchLeft()
+{
+  Serial.println("WHISKERSEARCH LEFT");
+  // Set the state, so the action can be handeled by the state machine.
+  action_state = A_WHISKERSEARCH_LEFT;
+}
+
+/**
+ * Look for somewhare to go.
+ */
+void actionWhiskerSearchRight()
+{
+  Serial.println("WHISKERSEARCH RIGHT");
+  // Set the state, so the action can be handeled by the state machine.
+  action_state = A_WHISKERSEARCH_RIGHT;
 }
 
 void actionTimeoutStart(int duration)
@@ -575,22 +617,29 @@ void whiskersCheck()
   
   // If the reading of the thumbstick is not the same as when calibrated,
   // we've hit something.
-  if (action_state == A_PINGSEARCH) {
+  if (action_state == A_PINGSEARCH || action_state == A_WHISKERSEARCH_LEFT || action_state == A_WHISKERSEARCH_RIGHT) {
     
-    // Doing a ping search already, so don't interfere with a whiskers bump. 
+    // Doing a search already, so don't interfere with a whiskers bump. 
     
-  } else if ( (val > whiskers_horiz_default + whiskers_threshold) || (val < whiskers_horiz_default - whiskers_threshold) ) {
+  } else if (val > whiskers_horiz_default + whiskers_threshold) {
     Serial.println(whiskers_horiz_default);
-       Serial.println("BUMP!");
+    Serial.println("BUMP LEFT!");
+    // Don't hit the obstacle.
+    motionStop();
+    soundDamage();
       
-      // Don't hit the obstacle.
-      motionStop();
-      
-      soundDamage();
-      
-      actionPingSearch();
-  }
+    actionWhiskerSearchLeft();
   
+  } else if (val < whiskers_horiz_default - whiskers_threshold) {
+    Serial.println(whiskers_horiz_default);
+    Serial.println("BUMP RIGHT!");
+    // Don't hit the obstacle.
+    motionStop();
+    soundDamage();
+      
+    actionWhiskerSearchRight();
+  }
+
 }
 
 /********************************************************************************
