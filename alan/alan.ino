@@ -352,112 +352,26 @@ void actionRun()
 {
 
   switch (action_state) {
+
+    case A_PINGSEARCH:
+      actionPingSearchStateMachine(motion_state);
+      break;
       
     case A_WHISKERSEARCH_LEFT:
-    case A_PINGSEARCH:
-      switch (motion_state) {
-        case M_STOP:
-           // reverse for 1 second
-           actionTimeoutStart(1000);
-           motionRev(200); 
-           Serial.println("REVERSE");    
-          break;
-          
-        case M_REV:
-          if (action_done) {
-            // Rotate for a random amount of time.
-            actionTimeoutStart(random(600, 900));
-            Serial.println("ROTATE LEFT");
-            motionRotateLeft(200); 
-          }
-          break;
-          
-        case M_ROTATE_LEFT:
-          if (action_done) {
-            Serial.println("SEARCH DONE");
-            // Trundle away
-            actionTrundle();
-          }
-          break;
-          
-        default:
-          break;
-      }
-      break; // End A_PINGSEARCH / A_WHISKERSEARCH_LEFT
+      actionWhiskerSearchLeftStateMachine(motion_state);
+      break;
       
     case A_WHISKERSEARCH_RIGHT:
-        switch (motion_state) {
-        case M_STOP:
-           // reverse for 1 second
-           actionTimeoutStart(1000);
-           motionRev(200); 
-           Serial.println("REVERSE");    
-          break;
-          
-        case M_REV:
-          if (action_done) {
-            //Serial.println(randNumber);
-            // Rotate for a random amount of time.
-            actionTimeoutStart(random(600, 900));
-            Serial.println("ROTATE RIGHT");
-            motionRotateRight(200); 
-          }
-          break;
-          
-        case M_ROTATE_RIGHT:
-          if (action_done) {
-            Serial.println("SEARCH DONE");
-            // Trundle away
-            actionTrundle();
-          }
-          break;
-
-        default:
-          break;
-      }
-      break; // End A_WHISKERSEARCH_RIGHT
+      actionWhiskerSearchRightStateMachine(motion_state);
+      break;
       
     case A_DANCE1:
-      switch (motion_state) {
-        case M_STOP:
-           // spin left for 3 seconds
-           actionTimeoutStart(3000);
-           motionRotateLeft(255);    
-          break;
-                    
-        case M_ROTATE_LEFT:
-          if (action_done) {
-            // Go forward a random amount
-            actionTimeoutStart(random(300,600));
-            motionFwd(250);
-          }
-          break;
-          
-        case M_FWD:
-          if (action_done) {
-            // Go Back a random amount
-            actionTimeoutStart(random(300,600));
-            motionRev(250);
-          }
-          break;
-          
-        case M_REV:
-          if (action_done) {
-            Serial.println("DANCE1 DONE");
-            // Trundle away
-            actionTrundle();
-          }
-          break;
-          
-        default:
-          break;
-      }
-      break; // End A_DANCE1
-      
-      
+      actionDance1StateMachine(motion_state);
+      break;
+   
     case A_DANCE2:
       actionDance2StateMachine(motion_state);
-      break; // End A_DANCE2
+      break;
       
     case A_BORED:
       break;
@@ -519,6 +433,44 @@ void actionDance1()
     // Start feeling
     whiskersStart();
   }
+}
+
+void actionDance1StateMachine(byte motion_state)
+{
+  switch (motion_state) {
+    case M_STOP:
+       // spin left for 3 seconds
+       actionTimeoutStart(3000);
+       motionRotateLeft(255);    
+      break;
+                
+    case M_ROTATE_LEFT:
+      if (action_done) {
+        // Go forward a random amount
+        actionTimeoutStart(random(300,600));
+        motionFwd(250);
+      }
+      break;
+      
+    case M_FWD:
+      if (action_done) {
+        // Go Back a random amount
+        actionTimeoutStart(random(300,600));
+        motionRev(250);
+      }
+      break;
+      
+    case M_REV:
+      if (action_done) {
+        Serial.println("DANCE1 DONE");
+        // Trundle away
+        actionTrundle();
+      }
+      break;
+      
+    default:
+      break;
+  }   
 }
 
 /**
@@ -586,6 +538,7 @@ void actionHappyStateMachine(byte motion_state)
   // Loop through left & right a few times.
   if (count > 3) {
     count = 0;
+    Serial.println("Happy done");
     actionStop(); 
   }
   
@@ -625,6 +578,36 @@ void actionPingSearch()
   action_state = A_PINGSEARCH;
 }
 
+void actionPingSearchStateMachine(byte motion_state)
+{
+  switch (motion_state) {
+    case M_STOP:
+       // reverse for 1 second
+       actionTimeoutStart(1000);
+       motionRev(200);   
+      break;
+      
+    case M_REV:
+      if (action_done) {
+        // Rotate for a random amount of time.
+        actionTimeoutStart(random(600, 900));
+        motionRotateLeft(200); 
+      }
+      break;
+      
+    case M_ROTATE_LEFT:
+      if (action_done) {
+        Serial.println("SEARCH DONE");
+        // Trundle away
+        actionTrundle();
+      }
+      break;
+      
+    default:
+      break;
+  } 
+}
+
 /**
  * Look for somewhare to go.
  */
@@ -635,6 +618,12 @@ void actionWhiskerSearchLeft()
   action_state = A_WHISKERSEARCH_LEFT;
 }
 
+void actionWhiskerSearchLeftStateMachine(byte motion_state)
+{
+  // Do the same as the ping search.
+  actionPingSearchStateMachine(motion_state);
+}
+
 /**
  * Look for somewhare to go.
  */
@@ -643,6 +632,36 @@ void actionWhiskerSearchRight()
   Serial.println("WHISKERSEARCH RIGHT");
   // Set the state, so the action can be handled by the state machine.
   action_state = A_WHISKERSEARCH_RIGHT;
+}
+
+void actionWhiskerSearchRightStateMachine(byte motion_state)
+{
+  switch (motion_state) {
+    case M_STOP:
+       // reverse for 1 second
+       actionTimeoutStart(1000);
+       motionRev(200);    
+      break;
+      
+    case M_REV:
+      if (action_done) {
+        // Rotate for a random amount of time.
+        actionTimeoutStart(random(600, 900));
+        motionRotateRight(200); 
+      }
+      break;
+      
+    case M_ROTATE_RIGHT:
+      if (action_done) {
+        Serial.println("SEARCH DONE");
+        // Trundle away
+        actionTrundle();
+      }
+      break;
+
+    default:
+      break;
+  } 
 }
 
 void actionTimeoutStart(int duration)
