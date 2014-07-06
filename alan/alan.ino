@@ -9,8 +9,8 @@
  12 - Motor A direction
  11 - (blocked by shield)
  10 - Infrared remote receiver
- 9  - Battery LED 1 (cut brake connect on bottom of the shield)
- 8  - Battery LED 2 (cut brake connect on bottom of the shield)
+ 9  - not used (cut brake connect on bottom of the shield to use)
+ 8  - not used (cut brake connect on bottom of the shield to use)
  7  - Ping trigger
  6  - Motor B pwm
  5  - Motor A pwm
@@ -20,8 +20,8 @@
  1  - not connected (Serial write)
  0  - not connected (Serial read)
  
- A0 - Motor current sensor (not used)
- A1 - Motor current sensor (not used)
+ A0 - Battery LED 1
+ A1 - Battery LED 2
  A2 - Battery LED 3
  A3 - unused
  A4 - Thumbstick vertical
@@ -78,7 +78,7 @@
 #define MOTOR_SPEED_MIN_A 200
 #define MOTOR_SPEED_MAX_A 255 
 #define MOTOR_SPEED_MIN_B 200
-#define MOTOR_SPEED_MAX_B 235 // This motor is slower on my setup.
+#define MOTOR_SPEED_MAX_B 235 // This motor is faster on my setup.
 
 
 // Right Motor attached to channel A:
@@ -191,6 +191,10 @@ void setup() {
   pinMode(3, INPUT); // Re-wired from the shield's default
   pinMode(11, INPUT); // Re-wired from the shield's default
   
+  // Battery indicator leds
+  pinMode(A0, OUTPUT);
+  pinMode(A1, OUTPUT);
+  pinMode(A2, OUTPUT);
   
   // Setup Channel A
   pinMode(motorA_direction, OUTPUT); // Initiates motor pin for channel A
@@ -216,9 +220,8 @@ void setup() {
   Serial.println(timer_battery);
   
   
-  
   actionStop();
-  //batteryLevel();
+  batteryLevel();
   whiskersCalibrate();
 
 }
@@ -255,6 +258,25 @@ void batteryLevel()
   //analogWrite(battery_led, batt);
   Serial.print("Battery: ");
   Serial.println(vcc);
+  
+  if (vcc > 4500) {
+    digitalWrite(A0, HIGH); 
+  } else {
+    digitalWrite(A0, LOW);
+  }
+  
+  if (vcc > 4000) {
+    digitalWrite(A1, HIGH); 
+  } else {
+    digitalWrite(A1, LOW);
+  }
+  
+  if (vcc > 3500) {
+    digitalWrite(A2, HIGH); 
+  } else {
+    digitalWrite(A2, LOW);
+  }
+  
   //Serial.print(" : ");
   //Serial.println(batt);
 }
