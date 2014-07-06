@@ -40,7 +40,7 @@
  Timing functions we use:
  
   timer 0 - Arduino time functions; millis() and motor speed
-  timer 1 - Generates the tones for sound AND movement for servos, but not at the same time.
+  timer 1 - Generates the tones for sound.
   timer 2 - Remote control IR
   
  PWM (timer) pins we use:
@@ -705,6 +705,7 @@ void irHandleInput(unsigned long code){
     /* Received code is for the number 1 button */
   case 0xFF30CF:
     strcpy (CodeName, "1");
+    soundPause();
     actionStop();
     break;
     /* Received code is for the number 2 button */

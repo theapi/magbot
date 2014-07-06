@@ -5,7 +5,7 @@
 #define Sound_h
 
 #include "Arduino.h"
-#include "NewTone.h"
+#include <NewTone.h>
 #include "SimpleTimer.h"
 
 class Sound
