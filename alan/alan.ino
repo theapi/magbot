@@ -110,7 +110,7 @@ const byte whiskers_threshold = 5; // How much the whiskers reading is allowed t
 int whiskers_timer = 0; // Stores the timer used for the whiskers.
 
 // Battery configuration
-unsigned long battery_delay = 15000; // Number of milliseconds to wait before next battery reading
+unsigned long battery_delay = 10000; // Number of milliseconds to wait before next battery reading
 
 // Sound configuration
 const byte sound_pin = 2;
@@ -164,7 +164,7 @@ enum action_states {
   A_WHISKERSEARCH_RIGHT,
   A_DANCE1,
   A_DANCE2,
-  A_BORED,
+  A_SAD,
   A_HAPPY,
 };
 // The curent action state.
@@ -204,11 +204,13 @@ void setup() {
   digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
   
+  timer.setTimeout(500, soundPause);
+  
   int timer_battery = timer.setInterval(battery_delay, batteryLevel);
   Serial.print("Battery tick started id=");
   Serial.println(timer_battery);
   
-  timer.setTimeout(500, soundPause);
+  
   
   actionStop();
   batteryLevel();
@@ -373,7 +375,8 @@ void actionRun()
       actionDance2StateMachine(motion_state);
       break;
       
-    case A_BORED:
+    case A_SAD:
+      actionSadStateMachine(motion_state);
       break;
       
     case A_HAPPY:
@@ -516,7 +519,7 @@ void actionDance2StateMachine(byte motion_state)
 }
 
 /**
- * Happy
+ * Happy :)
  */
 void actionHappy()
 {
@@ -559,6 +562,59 @@ void actionHappyStateMachine(byte motion_state)
         // Spin left for random amount of time
         actionTimeoutStart(random(500,700));
         motionRotateLeft(255);
+      }
+      break;
+
+    default:
+      break;
+  } 
+  
+}
+
+/**
+ * Sad :(
+ */
+void actionSad()
+{
+  if (action_state != A_SAD) {
+    Serial.println("Sad");
+    
+    // Set the state, so the action can be handled by the state machine.
+    action_state = A_SAD;
+    
+    actionTimeoutStart(random(500,700));
+    motionRev(200);
+  }
+}
+
+void actionSadStateMachine(byte motion_state)
+{
+  static byte count = 0;
+  
+  // Loop through left & right a few times.
+  if (count > 3) {
+    count = 0;
+    Serial.println("Sad done");
+    actionStop(); 
+  }
+  
+  switch (motion_state) {
+
+    case M_REV:
+      if (action_done) {
+        count++;
+        // Spin right for random amount of time
+        actionTimeoutStart(random(500,700));
+        motionFwd(200); 
+      }   
+      break;
+               
+    case M_FWD:
+      if (action_done) {
+        count++;
+        // Spin left for random amount of time
+        actionTimeoutStart(random(500,700));
+        motionRev(200);
       }
       break;
 
@@ -1008,6 +1064,7 @@ void irHandleInput(unsigned long code)
     /* Received code is for the number 5 button */
   case 0xFF38C7:
     strcpy (CodeName, "5");
+    actionSad();
     break;
     /* Received code is for the number 6 button */
   case 0xFF5AA5:
