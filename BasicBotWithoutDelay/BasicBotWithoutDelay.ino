@@ -3,11 +3,14 @@
  
  13 - Motor B direction
  12 - Motor A direction
+ 11 - Motor B pwm
+ 9  - Motor A brake
+ 8  - Motor B brake
  7  - Ping trigger
- 6  - Motor B pwm
- 5  - Motor A pwm
+ 3  - Motor A pwm
  4  - Ping echo
 */
+
 
 // The SimpleTimer library lets us do things when we want them to happen
 // without stopping everything for a delay.
@@ -25,12 +28,12 @@
 const byte motorA_direction = 12;
 const byte motorA_pwm = 3; 
 const byte motorA_brake = 9;
-const byte motorA_sensor = A0;
+
 // Left Motor attached to channel B:
 const byte motorB_direction = 13;
 const byte motorB_pwm = 11; 
 const byte motorB_brake = 8;
-const byte motorB_sensor = A1;
+
 
 // Ping configuration
 const byte ping_trigger = 7;  // Arduino pin tied to trigger pin on the ultrasonic sensor.
