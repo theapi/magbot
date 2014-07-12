@@ -1,14 +1,16 @@
-/**
+                                                /**
  PIN ALLOCATION:
  
+ 13 - Motor B direction 1
  12 - Motor A direction 2
+ 11 - Motor B direction 2
  8  - Motor A direction 1
  7  - Ping trigger
- 5  - Motor A pwm
  6  - Motor B pwm
+ 5  - Motor A pwm
  4  - Ping echo
- A6 - Motor B direction 2
- A7 - Motor B direction 1
+ 
+ 
 */
 
 #include <NewPing.h>
@@ -16,7 +18,7 @@
 #define MOTOR_SPEED_MIN_A 200
 #define MOTOR_SPEED_MAX_A 255 
 #define MOTOR_SPEED_MIN_B 200
-#define MOTOR_SPEED_MAX_B 235 // This motor is faster, so slow it down.
+#define MOTOR_SPEED_MAX_B 255 
 
 
 // Right Motor attached to channel A:
@@ -25,8 +27,8 @@ const byte motorA_direction2 = 12;
 const byte motorA_pwm = 5; 
 
 // Left Motor attached to channel B:
-const byte motorB_direction1 = A7;
-const byte motorB_direction2 = A6;
+const byte motorB_direction1 = 13;
+const byte motorB_direction2 = 11;
 const byte motorB_pwm = 6; 
 
 

@@ -5,12 +5,12 @@
  
  PIN ALLOCATION:
  
- 13 - Motor B direction
- 12 - Motor A direction
- 11 - (blocked by shield)
+ 13 - Motor B direction 1
+ 12 - Motor A direction 2
+ 11 - Motor B direction 2
  10 - Infrared remote receiver
- 9  - not used (cut brake connect on bottom of the shield to use)
- 8  - not used (cut brake connect on bottom of the shield to use)
+ 9  - not used
+ 8  - Motor A direction 1
  7  - Ping trigger
  6  - Motor B pwm
  5  - Motor A pwm
@@ -36,7 +36,7 @@
   timer 0 (controls pin 5, 6)  
   timer 1 (controls pin 10, 9)
   timer 2 (controls pin 3, 11) 
-  
+  .
  Timing functions we use:
  
   timer 0 - Arduino time functions; millis() and motor speed
@@ -78,9 +78,19 @@
 #define MOTOR_SPEED_MIN_A 200
 #define MOTOR_SPEED_MAX_A 255 
 #define MOTOR_SPEED_MIN_B 200
-#define MOTOR_SPEED_MAX_B 235 // This motor is faster on my setup.
+#define MOTOR_SPEED_MAX_B 255
 
+// Right Motor attached to channel A:
+const byte motorA_direction1 = 8;
+const byte motorA_direction2 = 12;
+const byte motorA_pwm = 5; 
 
+// Left Motor attached to channel B:
+const byte motorB_direction1 = 13;
+const byte motorB_direction2 = 11;
+const byte motorB_pwm = 6; 
+
+/*
 // Right Motor attached to channel A:
 const byte motorA_direction = 12;
 const byte motorA_pwm = 5; // Re-wired from the shield's default of 3
@@ -91,6 +101,7 @@ const byte motorB_direction = 13;
 const byte motorB_pwm = 6; // Re-wired from the shield's default of 11
 const byte motorB_brake = 8;
 const byte motorB_sensor = A1;
+*/
 
 // Ping configuration
 const byte ping_trigger = 7;  // Arduino pin tied to trigger pin on the ultrasonic sensor.
@@ -106,7 +117,7 @@ int whiskers_horiz_default = 512; // Assume half of full analogRead.
 const byte whiskers_vert = A4; // The analog input pin
 int whiskers_vert_default = 512; // Assume half of full analogRead.
 const byte whiskers_delay = 100; // How often to check the whiskers (milliseconds).
-const byte whiskers_threshold = 5; // How much the whiskers reading is allowed to fluctuate.
+const byte whiskers_threshold = 30; // How much the whiskers reading is allowed to fluctuate.
 int whiskers_timer = 0; // Stores the timer used for the whiskers.
 
 // Battery configuration
@@ -196,6 +207,7 @@ void setup() {
   pinMode(A1, OUTPUT);
   pinMode(A2, OUTPUT);
   
+  /*
   // Setup Channel A
   pinMode(motorA_direction, OUTPUT); // Initiates motor pin for channel A
   pinMode(motorA_brake, OUTPUT); // Initiates break pin for channel A
@@ -207,6 +219,17 @@ void setup() {
   // Ensure the brakes are off
   digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
   digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
+  */
+  
+    // Setup Channel A
+  pinMode(motorA_direction1, OUTPUT); // Initiates motor pin for channel A
+  pinMode(motorA_direction2, OUTPUT); // Initiates motor pin for channel A
+  pinMode(motorA_pwm, OUTPUT);        // Initiates speed control for channel A 
+
+  // Setup Channel B
+  pinMode(motorB_direction1, OUTPUT); // Initiates motor pin for channel B
+  pinMode(motorB_direction2, OUTPUT); // Initiates motor pin for channel B
+  pinMode(motorB_pwm, OUTPUT);        // Initiates speed control for channel B 
   
   // Set a timer just to fill the timer slot that does not work.
   timer.setTimeout(10, batteryLevel); // @todo fix dead first timer.
@@ -223,6 +246,9 @@ void setup() {
   actionStop();
   batteryLevel();
   whiskersCalibrate();
+  
+  timer.setTimeout(500, actionTrundle);
+  
 
 }
 
@@ -767,8 +793,9 @@ Motion functions
 
 void motionStop()
 {
-    analogWrite(motorA_pwm, 0); // Channel A at max speed 
-    analogWrite(motorB_pwm, 0); // Channel B at max speed 
+    Serial.println("STOP");
+  analogWrite(motorA_pwm, 0); // Zero speed 
+  analogWrite(motorB_pwm, 0); // Zero speed 
     motion_state = M_STOP;
   
 }
@@ -779,10 +806,14 @@ void motionFwd(byte speed)
   byte speed_b = motionSpeedCompensateB(speed);
   
   Serial.println("FORWARD");
-  digitalWrite(motorA_direction, HIGH); // Channel A forward
-  digitalWrite(motorB_direction, HIGH); // Channel B forward
-  analogWrite(motorA_pwm, speed_a); // Channel A at max speed 
-  analogWrite(motorB_pwm, speed_b); // Channel B at max speed 
+  digitalWrite(motorA_direction1, HIGH); // Channel A forward
+  digitalWrite(motorA_direction2, LOW);
+  
+  digitalWrite(motorB_direction1, HIGH); // Channel B forward
+  digitalWrite(motorB_direction2, LOW); 
+  
+  analogWrite(motorA_pwm, speed_a); // set the speed 
+  analogWrite(motorB_pwm, speed_b); // set the speed 
   motion_state = M_FWD;
 }
 
@@ -792,10 +823,14 @@ void motionRev(byte speed)
   byte speed_b = motionSpeedCompensateB(speed);
   
   Serial.println("REVERSE");
-  digitalWrite(motorA_direction, LOW); // Channel A backward
-  digitalWrite(motorB_direction, LOW); // Channel B backward
-  analogWrite(motorA_pwm, speed_a); // Channel A at minimum speed 
-  analogWrite(motorB_pwm, speed_b); // Channel B at minimum speed   
+  digitalWrite(motorA_direction1, LOW); // Channel A reverse
+  digitalWrite(motorA_direction2, HIGH);
+  
+  digitalWrite(motorB_direction1, LOW); // Channel B reverse
+  digitalWrite(motorB_direction2, HIGH); 
+  
+  analogWrite(motorA_pwm, speed_a); // set the speed 
+  analogWrite(motorB_pwm, speed_b); // set the speed 
   motion_state = M_REV; 
   
 }
@@ -806,10 +841,14 @@ void motionRotateLeft(byte speed)
   byte speed_b = motionSpeedCompensateB(speed);
   
   Serial.println("LEFT");
-  digitalWrite(motorA_direction, HIGH); // Channel A forward
-  digitalWrite(motorB_direction, LOW); // Channel B backward
+  digitalWrite(motorA_direction1, HIGH); // Channel A forward
+  digitalWrite(motorA_direction2, LOW);
+  
+  digitalWrite(motorB_direction1, LOW); // Channel B reverse
+  digitalWrite(motorB_direction2, HIGH); 
+
   analogWrite(motorA_pwm, speed_a);
-  analogWrite(motorB_pwm, speed_b);   
+  analogWrite(motorB_pwm, speed_b);    
   motion_state = M_ROTATE_LEFT; 
 }
 
@@ -819,8 +858,12 @@ void motionRotateRight(byte speed)
   byte speed_b = motionSpeedCompensateB(speed);
   
   Serial.println("RIGHT");
-  digitalWrite(motorA_direction, LOW); // Channel A backward
-  digitalWrite(motorB_direction, HIGH); // Channel B forward
+  digitalWrite(motorA_direction1, LOW); // Channel A reverse
+  digitalWrite(motorA_direction2, HIGH);
+  
+  digitalWrite(motorB_direction1, HIGH); // Channel B forward
+  digitalWrite(motorB_direction2, LOW); 
+  
   analogWrite(motorA_pwm, speed_a);
   analogWrite(motorB_pwm, speed_b);   
   motion_state = M_ROTATE_RIGHT; 
@@ -908,10 +951,8 @@ void whiskersCheck()
   // Vertical check
   int val = analogRead(whiskers_vert);
   if (val > whiskers_horiz_default + whiskers_threshold || val < whiskers_vert_default - whiskers_threshold) {
-    Serial.println("BUMP LEFT!");
-    Serial.print(whiskers_horiz_default);
-    Serial.print(" default - whisker read: ");
-    Serial.println(val);
+    Serial.println(whiskers_vert_default);
+    Serial.println("BUMP VERTICLE!");
     // Don't hit the obstacle.
     motionStop();
     soundDamage();
@@ -928,8 +969,10 @@ void whiskersCheck()
     
     
     if (val > whiskers_horiz_default + whiskers_threshold) {
-      Serial.println(whiskers_horiz_default);
       Serial.println("BUMP LEFT!");
+      Serial.print(whiskers_horiz_default);
+      Serial.print(" default - whisker read: ");
+      Serial.println(val);
       // Don't hit the obstacle.
       motionStop();
       soundDamage();
