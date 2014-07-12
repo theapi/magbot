@@ -15,7 +15,7 @@
  6  - Motor B pwm
  5  - Motor A pwm
  4  - Ping echo
- 3  - (blocked by shield)
+ 3  - not used
  2  - Sound
  1  - not connected (Serial write)
  0  - not connected (Serial read)
@@ -247,7 +247,7 @@ void setup() {
   batteryLevel();
   whiskersCalibrate();
   
-  timer.setTimeout(500, actionTrundle);
+  //timer.setTimeout(500, actionTrundle);
   
 
 }
@@ -1058,6 +1058,8 @@ void irHandleInput(unsigned long code)
   /* Save this code incase we get a repeat code next time */
   LastCode = code;
   
+  Serial.println(code);
+  
   /* Find the button name for the received code */
   switch (code)
   {
@@ -1163,7 +1165,7 @@ void irHandleInput(unsigned long code)
     break;
   }
 
-  //Serial.println(CodeName);
+  Serial.println(CodeName);
 }
 
 /********************************************************************************
