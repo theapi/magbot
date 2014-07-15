@@ -53,7 +53,6 @@
  
  */
 
-#include <util/delay.h>
 
 #include "NewPingLite.h" // Adapted from https://code.google.com/p/arduino-new-ping/
 #include <NewTone.h>
@@ -100,7 +99,7 @@ const byte ping_delay = 200; // Number of milliseconds to wait before next ping
 NewPingLite sonar(ping_trigger, ping_echo, ping_distance); // NewPing setup of pins and maximum distance.
 int ping_timer = 0; // Stores the timer used for the ping sonar.
 
-// Whiskers setup
+// Whiskers configuration
 const byte whiskers_horiz = A5; // The analog input pin
 int whiskers_horiz_default = 512; // Assume half of full analogRead.
 const byte whiskers_vert = A4; // The analog input pin
@@ -299,7 +298,7 @@ long readVcc()
     ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
   #endif  
  
-  _delay_ms(2); // Wait for Vref to settle
+  delay(2); // Wait for Vref to settle
   ADCSRA |= _BV(ADSC); // Start conversion
   while (bit_is_set(ADCSRA,ADSC)); // measuring
  
@@ -907,8 +906,8 @@ void whiskersCheck()
   
   // Vertical check
   int val = analogRead(whiskers_vert);
-  if (val > whiskers_horiz_default + whiskers_threshold || val < whiskers_vert_default - whiskers_threshold) {
-    Serial.println("BUMP LEFT!");
+  if (val > whiskers_vert_default + whiskers_threshold || val < whiskers_vert_default - whiskers_threshold) {
+    Serial.println("BUMP VERTICAL!");
     Serial.print(whiskers_horiz_default);
     Serial.print(" default - whisker read: ");
     Serial.println(val);
