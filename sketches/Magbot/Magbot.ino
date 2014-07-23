@@ -2,6 +2,9 @@
  HC-SR04 Ultrasonic Range Finder.
  Two motors attached to the motor shield.
  speaker/piezo for sound
+ IR remote control
+ Thumbstick for whiskers
+ 3 leds for battery status
  
  PIN ALLOCATION:
  
@@ -46,7 +49,7 @@
  PWM (timer) pins we use:
   timer 0 pin 5  - Motor A to control speed.
   timer 0 pin 6  - Motor B to control speed.
-  timer 1 pin 9  - Battery LED 1.  Can only be used for digitalRead() & digitalWrite()
+  timer 1 pin 9  - Can only be used for digitalRead() & digitalWrite()
   timer 1 pin 10 - IR receiver.    Can only be used for digitalRead() & digitalWrite()
   timer 2 pin 3  - Cannot be used as pin (blocked by shield)
   timer 2 pin 11 - Cannot be used as pin (blocked by shield)
@@ -54,7 +57,11 @@
  */
 
 
-#include "NewPingLite.h" // Adapted from https://code.google.com/p/arduino-new-ping/
+// NewPingLite - Adapted from https://code.google.com/p/arduino-new-ping/
+// to remove the unused timer interrupt functions that conflict with other libraries.
+#include "NewPingLite.h" 
+
+// NewTone - For playing sounds using timer 1
 #include <NewTone.h>
 
 

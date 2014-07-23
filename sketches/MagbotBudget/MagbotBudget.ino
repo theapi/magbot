@@ -1,7 +1,10 @@
 /**
  HC-SR04 Ultrasonic Range Finder.
- Two motors attached to the motor shield.
+ Two motors attached to the L293D motor controller.
  speaker/piezo for sound
+ IR remote control
+ Thumbstick for whiskers
+ 3 leds for battery status
  
  PIN ALLOCATION:
  
@@ -46,16 +49,19 @@
  PWM (timer) pins we use:
   timer 0 pin 5  - Motor A to control speed.
   timer 0 pin 6  - Motor B to control speed.
-  timer 1 pin 9  - Battery LED 1.  Can only be used for digitalRead() & digitalWrite()
+  timer 1 pin 9  - Can only be used for digitalRead() & digitalWrite()
   timer 1 pin 10 - IR receiver.    Can only be used for digitalRead() & digitalWrite()
   timer 2 pin 3  - Cannot be used as pin (blocked by shield)
   timer 2 pin 11 - Cannot be used as pin (blocked by shield)
  
  */
+ 
+ 
+// NewPingLite - Adapted from https://code.google.com/p/arduino-new-ping/
+// to remove the unused timer interrupt functions that conflict with other libraries.
+#include "NewPingLite.h" 
 
-#include <util/delay.h>
-
-#include "NewPingLite.h" // Adapted from https://code.google.com/p/arduino-new-ping/
+// NewTone - For playing sounds using timer 1
 #include <NewTone.h>
 
 
@@ -89,19 +95,6 @@ const byte motorA_pwm = 5;
 const byte motorB_direction1 = 13;
 const byte motorB_direction2 = 11;
 const byte motorB_pwm = 6; 
-
-/*
-// Right Motor attached to channel A:
-const byte motorA_direction = 12;
-const byte motorA_pwm = 5; // Re-wired from the shield's default of 3
-const byte motorA_brake = 9;
-const byte motorA_sensor = A0;
-// Left Motor attached to channel B:
-const byte motorB_direction = 13;
-const byte motorB_pwm = 6; // Re-wired from the shield's default of 11
-const byte motorB_brake = 8;
-const byte motorB_sensor = A1;
-*/
 
 // Ping configuration
 const byte ping_trigger = 7;  // Arduino pin tied to trigger pin on the ultrasonic sensor.
@@ -325,7 +318,7 @@ long readVcc()
     ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
   #endif  
  
-  _delay_ms(2); // Wait for Vref to settle
+  delay(2); // Wait for Vref to settle
   ADCSRA |= _BV(ADSC); // Start conversion
   while (bit_is_set(ADCSRA,ADSC)); // measuring
  
