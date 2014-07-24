@@ -142,11 +142,11 @@ NOTE_F5, NOTE_A5, NOTE_C6 };
 int power_durations[] = {12, 12, 12, 12, 12, 12, 12, 12, 12};
 
 
-/* Structure containing received data */
-decode_results results;/* Used to store the last code received. Used when a repeat code is received */
+// Structure containing received data 
+decode_results results;
+// Used to store the last code received. Used when a repeat code is received 
 unsigned long LastCode;
-
-/* Create an instance of the IRrecv library */
+// Create an instance of the IRrecv library
 IRrecv irrecv(RECV_PIN);
 
 // The motion states, so we always know where we're going.
@@ -189,8 +189,9 @@ Sound snd(sound_pin);
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see debugging messages.
   
+  // Start listening for IR codes
   irrecv.enableIRIn();
-  /* Initialise the variable containing the last code received */
+  // Initialise the variable containing the last code received 
   LastCode = 0;
   
   pinMode(3, INPUT); // Re-wired from the shield's default
@@ -200,22 +201,8 @@ void setup() {
   pinMode(A0, OUTPUT);
   pinMode(A1, OUTPUT);
   pinMode(A2, OUTPUT);
-  
-  /*
-  // Setup Channel A
-  pinMode(motorA_direction, OUTPUT); // Initiates motor pin for channel A
-  pinMode(motorA_brake, OUTPUT); // Initiates break pin for channel A
 
-  // Setup Channel B
-  pinMode(motorB_direction, OUTPUT); // Initiates motor pin for channel B
-  pinMode(motorB_brake, OUTPUT);  // Initiates break pin for channel B
-  
-  // Ensure the brakes are off
-  digitalWrite(motorA_brake, LOW);   // Disengage the Brake for Channel A
-  digitalWrite(motorB_brake, LOW);   // Disengage the Brake for Channel B
-  */
-  
-    // Setup Channel A
+  // Setup Channel A
   pinMode(motorA_direction1, OUTPUT); // Initiates motor pin for channel A
   pinMode(motorA_direction2, OUTPUT); // Initiates motor pin for channel A
   pinMode(motorA_pwm, OUTPUT);        // Initiates speed control for channel A 
@@ -249,14 +236,11 @@ void setup() {
 void loop() 
 {
   
-    /* Has a new code been received? */
-  if (irrecv.decode(&results))
-  {
-    /* If so get the button name for the received code */
+  // Has a new IR code been received?
+  if (irrecv.decode(&results)) {
+    // If so get the button name for the received code
     irHandleInput(results.value);
-    //GetIRIndex(results.value);
-    //Serial.println(GetIRIndex(results.value));
-    /* Start receiving codes again*/
+    // Start receiving codes again
     irrecv.resume();
   }
   

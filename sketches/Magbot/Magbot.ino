@@ -144,11 +144,11 @@ NOTE_F5, NOTE_A5, NOTE_C6 };
 int power_durations[] = {12, 12, 12, 12, 12, 12, 12, 12, 12};
 
 
-/* Structure containing received data */
-decode_results results;/* Used to store the last code received. Used when a repeat code is received */
+// Structure containing received data
+decode_results results;
+// Used to store the last code received. Used when a repeat code is received
 unsigned long LastCode;
-
-/* Create an instance of the IRrecv library */
+// Create an instance of the IRrecv library
 IRrecv irrecv(RECV_PIN);
 
 // The motion states, so we always know where we're going.
@@ -191,8 +191,9 @@ Sound snd(sound_pin);
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see debugging messages.
   
+  // Start listening for IR codes
   irrecv.enableIRIn();
-  /* Initialise the variable containing the last code received */
+  // Initialise the variable containing the last code received 
   LastCode = 0;
   
   pinMode(3, INPUT); // Re-wired from the shield's default
@@ -236,14 +237,11 @@ void setup() {
 void loop() 
 {
   
-    /* Has a new code been received? */
-  if (irrecv.decode(&results))
-  {
-    /* If so get the button name for the received code */
+  // Check for a new IR code
+  if (irrecv.decode(&results)) {
+    // Cet the button name for the received code
     irHandleInput(results.value);
-    //GetIRIndex(results.value);
-    //Serial.println(GetIRIndex(results.value));
-    /* Start receiving codes again*/
+    // Start receiving codes again
     irrecv.resume();
   }
   
