@@ -57,16 +57,17 @@
  */
 
 
-// NewPingLite - Adapted from https://code.google.com/p/arduino-new-ping/
-// to remove the unused timer interrupt functions that conflict with other libraries.
-#include "NewPingLite.h" 
-
 // NewTone - For playing sounds using timer 1
+// https://code.google.com/p/arduino-new-tone/
 #include <NewTone.h>
-
 
 // https://github.com/shirriff/Arduino-IRremote
 #include <IRremote.h>
+
+
+// NewPingLite - Adapted from https://code.google.com/p/arduino-new-ping/
+// to remove the unused timer interrupt functions that conflict with other libraries.
+#include "NewPingLite.h" 
 
 // The timer library lets us do things when we want them to happen
 // without stopping everything for a delay.

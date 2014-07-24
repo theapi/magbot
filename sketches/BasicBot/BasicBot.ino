@@ -11,6 +11,7 @@
  4  - Ping echo
 */
 
+// https://code.google.com/p/arduino-new-ping/
 #include <NewPing.h>
 
 #define MOTOR_SPEED_MIN_A 200
