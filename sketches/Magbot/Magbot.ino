@@ -23,8 +23,8 @@
  1  - not connected (Serial write)
  0  - not connected (Serial read)
  
- A0 - Battery LED 1
- A1 - Battery LED 2
+ A0 - Battery LED 1 (cut SNS0 on bottom of the shield to use)
+ A1 - Battery LED 2 (cut SNS1 on bottom of the shield to use)
  A2 - Battery LED 3
  A3 - unused
  A4 - Thumbstick vertical
