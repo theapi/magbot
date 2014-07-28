@@ -76,11 +76,10 @@
 #include "SoundPitches.h"
 #include "Sound.h"
 
-
-
-// Define the DIO pin used for the receiver 
-#define RECV_PIN 10
-
+// The Infrared remote is optional, so default to not using it.
+// To enable the Ir remoteChange to 
+//#define USE_IR_REMOTE 1
+#define USE_IR_REMOTE 0
 
 #define MOTOR_SPEED_MIN_A 200
 #define MOTOR_SPEED_MAX_A 255 
@@ -146,8 +145,10 @@ int power_durations[] = {12, 12, 12, 12, 12, 12, 12, 12, 12};
 decode_results results;
 // Used to store the last code received. Used when a repeat code is received 
 unsigned long LastCode;
+// The pin used for IR the receiver 
+const byte ir_rec_pin = 10;
 // Create an instance of the IRrecv library
-IRrecv irrecv(RECV_PIN);
+IRrecv irrecv(ir_rec_pin);
 
 // The motion states, so we always know where we're going.
 enum motion_states {
@@ -228,8 +229,10 @@ void setup() {
   batteryLevel();
   whiskersCalibrate();
   
-  //timer.setTimeout(500, actionTrundle);
-  
+  if (!USE_IR_REMOTE) {
+    // No ir remote so just start trundling.
+    timer.setTimeout(500, actionTrundle);
+  }
 
 }
 
@@ -237,7 +240,7 @@ void loop()
 {
   
   // Has a new IR code been received?
-  if (irrecv.decode(&results)) {
+  if (USE_IR_REMOTE && irrecv.decode(&results)) {
     // If so get the button name for the received code
     irHandleInput(results.value);
     // Start receiving codes again

@@ -77,11 +77,6 @@
 #include "Sound.h"
 
 
-
-// Define the DIO pin used for the receiver 
-#define RECV_PIN 10
-
-
 #define MOTOR_SPEED_MIN_A 200
 #define MOTOR_SPEED_MAX_A 255 
 #define MOTOR_SPEED_MIN_B 200
@@ -148,8 +143,10 @@ int power_durations[] = {12, 12, 12, 12, 12, 12, 12, 12, 12};
 decode_results results;
 // Used to store the last code received. Used when a repeat code is received
 unsigned long LastCode;
+// The pin used for IR the receiver 
+const byte ir_rec_pin = 10;
 // Create an instance of the IRrecv library
-IRrecv irrecv(RECV_PIN);
+IRrecv irrecv(ir_rec_pin);
 
 // The motion states, so we always know where we're going.
 enum motion_states {
