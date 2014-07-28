@@ -1,27 +1,30 @@
 /*
-Simple Temperature uses the lm35 in the basic centigrade temperature configuration
+ Simple Temperature uses the lm35 in the basic centigrade temperature configuration
 */
-float temp;
-int tempPin = 0; // analog input pin
-int sampleTime = 1000; // 1 second dafault 
+
+int sensor_pin = 0; // analog input pin
+int interval = 1000; // How often the take a reading
+
 void setup()
 {
   Serial.begin(9600);
 }
+
 void loop()
 {
-  //gets and prints the raw data from the lm35
-  temp = analogRead(tempPin);
+  // Gets and prints the raw data from the lm35
+  int val = analogRead(sensor_pin);
   Serial.print("RAW DATA: ");
-  Serial.print (temp);
+  Serial.print (val);
   Serial.println(" ");
-  //converts raw data into degrees celsius and prints it out
-  // 500mV/1024=.48828125
-  temp = temp * 0.48828125;
+  
+  // Convert the raw data into degrees celsius and print it out
+  // 500mV/1024 = 0.48828125
+  float temperature = val * 0.48828125;
   Serial.print("CELSIUS: ");
-  Serial.print(temp);
+  Serial.print(temperature);
   Serial.println("*C ");
   
-  delay(sampleTime);
-
+  delay(interval);
 }
+
