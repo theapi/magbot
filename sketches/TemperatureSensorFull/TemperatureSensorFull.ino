@@ -3,7 +3,7 @@
 */
 
 int sensor_pin = 0; // analog input pin
-int interval = 1000; // How often the take a reading
+int interval = 1000; // How often we take a reading
 
 void setup()
 {
