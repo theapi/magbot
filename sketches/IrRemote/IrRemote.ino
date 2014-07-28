@@ -6,7 +6,7 @@
 #include <IRremote.h>
 
 // the pin used for the infrared receiver 
-int RECV_PIN = 11;
+int RECV_PIN = 10;
 
 // Create an instance of the IRrecv library
 IRrecv irrecv(RECV_PIN);
