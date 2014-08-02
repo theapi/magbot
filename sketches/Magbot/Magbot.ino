@@ -1,4 +1,6 @@
 /**
+ Created by Peter Clarke
+
  HC-SR04 Ultrasonic Range Finder.
  Two motors attached to the motor shield.
  speaker/piezo for sound
