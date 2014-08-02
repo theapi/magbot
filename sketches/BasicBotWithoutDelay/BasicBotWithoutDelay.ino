@@ -1,4 +1,6 @@
 /**
+ Created by Peter Clarke
+
  PIN ALLOCATION:
  
  13 - Motor B direction
