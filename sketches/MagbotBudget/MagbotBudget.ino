@@ -1,4 +1,6 @@
 /**
+ Created by Peter Clarke
+
  HC-SR04 Ultrasonic Range Finder.
  Two motors attached to the L293D motor controller.
  speaker/piezo for sound
